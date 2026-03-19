@@ -1,0 +1,2012 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#f1f5f9">
+    <title>JSON 格式化工具</title>
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>{ }</text></svg>">
+    <style>
+        :root {
+            --bg-start: #f1f5f9;
+            --bg-end: #f1f5f9;
+            --bg-gradient: var(--bg-start);
+            --bg-primary: #fff;
+            --bg-secondary: #f8fafc;
+            --bg-input: #fefefe;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --resizer-bg: #e2e8f0;
+            --resizer-hover: #cbd5e1;
+            --resizer-handle: #94a3b8;
+            --resizer-dragging: #2563eb;
+            --btn-primary-bg: #2563eb;
+            --btn-primary-hover: #1d4ed8;
+            --btn-secondary-bg: #fff;
+            --btn-secondary-text: #374151;
+            --btn-secondary-hover: #f3f4f6;
+            --small-btn-bg: #dbeafe;
+            --small-btn-text: #1e40af;
+            --small-btn-hover: #bfdbfe;
+            --syntax-string: #007777;
+            --syntax-number: #c2410c;
+            --syntax-boolean: #0000FF;
+            --syntax-null: #0000FF;
+            --syntax-key: #CC0000;
+            --syntax-brace-obj: #00AA00;
+            --syntax-brace-arr: #0033FF;
+            --syntax-comma: #000000;
+            --collapse-icon-bg: #e0e0e0;
+            --collapse-icon-hover: #d0d0d0;
+            --collapse-icon-color: #666;
+            --placeholder-color: #94a3b8;
+            --select-border: #bfdbfe;
+            --select-hover: #93c5fd;
+            --select-bg: #fff;
+            --select-text: #1f2937;
+            --header-btn-text: #374151;
+            --selection-bg: #b3d4fc;
+            --selection-text: inherit;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-start: #0f172a;
+                --bg-end: #1e293b;
+                --bg-gradient: var(--bg-start);
+                --bg-primary: #1e293b;
+                --bg-secondary: #0f172a;
+                --bg-input: #1e293b;
+                --text-primary: #cbd5e1;
+                --text-secondary: #94a3b8;
+                --border-color: #334155;
+                --resizer-bg: #334155;
+                --resizer-hover: #475569;
+                --resizer-handle: #64748b;
+                --resizer-dragging: #3b82f6;
+                --btn-primary-bg: #3b82f6;
+                --btn-primary-hover: #2563eb;
+                --btn-secondary-bg: #1e293b;
+                --btn-secondary-text: #f1f5f9;
+                --btn-secondary-hover: #334155;
+                --small-btn-bg: #1e3a8a;
+                --small-btn-text: #bfdbfe;
+                --small-btn-hover: #1e40af;
+                --syntax-string: #a5d6ff;
+                --syntax-number: #ffa657;
+                --syntax-boolean: #79c0ff;
+                --syntax-null: #79c0ff;
+                --syntax-key: #e06c75;
+                --syntax-brace-obj: #7ee787;
+                --syntax-brace-arr: #79c0ff;
+                --syntax-comma: #f0f6fc;
+                --collapse-icon-bg: #334155;
+                --collapse-icon-hover: #475569;
+                --collapse-icon-color: #94a3b8;
+                --placeholder-color: #64748b;
+                --select-border: #1d4ed8;
+                --select-hover: #3b82f6;
+                --select-bg: #1e293b;
+                --select-text: #dddddd;
+                --header-btn-text: #cccccc;
+                --selection-bg: rgba(255, 255, 255, 0.2);
+                --selection-text: inherit;
+            }
+        }
+
+        html.light {
+            --bg-start: #f1f5f9;
+            --bg-end: #f1f5f9;
+            --bg-gradient: var(--bg-start);
+            --bg-primary: #fff;
+            --bg-secondary: #f8fafc;
+            --bg-input: #fefefe;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --resizer-bg: #e2e8f0;
+            --resizer-hover: #999999;
+            --resizer-handle: #94a3b8;
+            --resizer-dragging: #2563eb;
+            --btn-primary-bg: #2563eb;
+            --btn-primary-hover: #1d4ed8;
+            --btn-secondary-bg: #fff;
+            --btn-secondary-text: #374151;
+            --btn-secondary-hover: #f3f4f6;
+            --small-btn-bg: #dbeafe;
+            --small-btn-text: #1e40af;
+            --small-btn-hover: #bfdbfe;
+            --syntax-string: #007777;
+            --syntax-number: #c2410c;
+            --syntax-boolean: #0000FF;
+            --syntax-null: #0000FF;
+            --syntax-key: #CC0000;
+            --syntax-brace-obj: #00AA00;
+            --syntax-brace-arr: #0033FF;
+            --syntax-comma: #000000;
+            --collapse-icon-bg: #e0e0e0;
+            --collapse-icon-hover: #d0d0d0;
+            --collapse-icon-color: #666;
+            --placeholder-color: #94a3b8;
+            --select-border: #bfdbfe;
+            --select-hover: #93c5fd;
+            --select-bg: #fff;
+            --select-text: #1f2937;
+            --header-btn-text: #374151;
+            --selection-bg: #b3d4fc;
+            --selection-text: inherit;
+        }
+
+        html.dark {
+            --bg-start: #0f172a;
+            --bg-end: #0f172a;
+            --bg-gradient: var(--bg-start);
+            --bg-primary: #1e293b;
+            --bg-secondary: #0f172a;
+            --bg-input: #1e293b;
+            --text-primary: #cbd5e1;
+            --text-secondary: #94a3b8;
+            --border-color: #334155;
+            --resizer-bg: #334155;
+            --resizer-hover: #475569;
+            --resizer-handle: #64748b;
+            --resizer-dragging: #3b82f6;
+            --btn-primary-bg: #3b82f6;
+            --btn-primary-hover: #2563eb;
+            --btn-secondary-bg: #1e293b;
+            --btn-secondary-text: #f1f5f9;
+            --btn-secondary-hover: #334155;
+            --small-btn-bg: #1e3a8a;
+            --small-btn-text: #bfdbfe;
+            --small-btn-hover: #1e40af;
+            --syntax-string: #a5d6ff;
+            --syntax-number: #ffa657;
+            --syntax-boolean: #79c0ff;
+            --syntax-null: #79c0ff;
+            --syntax-key: #e06c75;
+            --syntax-brace-obj: #7ee787;
+            --syntax-brace-arr: #79c0ff;
+            --syntax-comma: #f0f6fc;
+            --collapse-icon-bg: #334155;
+            --collapse-icon-hover: #475569;
+            --collapse-icon-color: #94a3b8;
+            --placeholder-color: #64748b;
+            --select-border: #1d4ed8;
+            --select-hover: #3b82f6;
+            --select-bg: #1e293b;
+            --select-text: #dddddd;
+            --header-btn-text: #cccccc;
+            --selection-bg: rgba(255, 255, 255, 0.2);
+            --selection-text: inherit;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        ::selection {
+            background-color: var(--selection-bg);
+            color: var(--selection-text);
+        }
+
+        html {
+            height: 100%;
+            background-color: var(--bg-start);
+        }
+
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            /* 使用伪元素固定背景，解决 iOS 滚动漏白问题 */
+            position: relative;
+            z-index: 0;
+            /* 修改间距 顶部留出空间给固定标题 (20px -> 80px) */
+            padding: 80px 15px 15px;
+            display: flex;
+            flex-direction: column;
+            /* 修复垂直布局高度不撑满问题：使用 height: 100% 替代 min-height: 100vh */
+            height: 100%;
+            overflow: auto;
+            color: var(--text-primary);
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: var(--bg-gradient);
+            pointer-events: none;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;
+            overflow-x: auto;
+        }
+
+        h1 {
+            /* 固定在左上角，与右侧按钮对齐 */
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            margin: 0;
+
+            display: flex;
+            align-items: center;
+            gap: 10px;
+
+            color: var(--text-primary);
+            font-weight: 600;
+
+            font-size: 24px;
+            line-height: 40px;
+            /* 与按钮高度一致 */
+            height: 40px;
+            /* 移除默认 transition，通过类名控制，防止页面加载时闪烁 */
+            /* transition: font-size 0.2s ease; */
+            white-space: nowrap;
+            /* 防止换行 */
+        }
+
+        /* 启用动画的类 */
+        h1.enable-transition {
+            transition: font-size 0.2s ease;
+        }
+
+        /* 动态调整字体大小的类 */
+        h1.title-md {
+            font-size: 20px;
+        }
+
+        h1.title-sm {
+            font-size: 16px;
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background: var(--btn-primary-bg);
+            color: white;
+            border-color: var(--btn-primary-bg);
+        }
+
+        .btn-primary:hover {
+            background: var(--btn-primary-hover);
+            border-color: var(--btn-primary-hover);
+        }
+
+        .btn-secondary {
+            background: var(--btn-secondary-bg);
+            color: var(--btn-secondary-text);
+        }
+
+        .btn-secondary:hover {
+            background: var(--btn-secondary-hover);
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .editor-container {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 0;
+            background: var(--bg-primary);
+            border-radius: 8px;
+            /* 修改间距 文本框四周间距改为 1.5 倍 (10px -> 15px) */
+            padding: 15px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            border: 1px solid var(--border-color);
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+            min-width: var(--container-min-width, 716px);
+        }
+
+        body.layout-vertical .container {
+            min-height: 0;
+        }
+
+        body.layout-vertical .editor-container {
+            grid-template-columns: 1fr;
+            grid-template-rows: minmax(var(--vertical-panel-min-height, 140px), 1fr) auto minmax(var(--vertical-panel-min-height, 140px), 1fr);
+            min-width: var(--vertical-container-min-width, 354px);
+            /* 确保两个面板都能显示最小高度：面板×2 + 分隔条(28px) + 内边距(30px) + 边框(2px) */
+            min-height: calc(var(--vertical-panel-min-height, 140px) * 2 + 60px);
+        }
+
+        body.layout-vertical .editor-panel {
+            min-width: 0;
+            min-height: var(--vertical-panel-min-height, 140px);
+        }
+
+        body.layout-vertical textarea,
+        body.layout-vertical .output-wrapper {
+            min-height: 80px;
+        }
+
+        .editor-panel {
+            display: flex;
+            flex-direction: column;
+            min-width: var(--panel-min-width, 334px);
+            min-height: 0;
+            overflow: hidden;
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        /* 拖拽分隔条样式 */
+        .resizer {
+            background: var(--resizer-bg);
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .resizer:hover {
+            background: var(--resizer-hover);
+        }
+
+        .resizer.dragging {
+            background: var(--resizer-dragging);
+        }
+
+        .resizer-h {
+            width: 12px;
+            cursor: col-resize;
+            margin: 0 8px;
+            border-radius: 4px;
+        }
+
+        .resizer-v {
+            height: 12px;
+            cursor: row-resize;
+            margin: 8px 0;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .resizer-handle {
+            width: 4px;
+            height: 40px;
+            background: var(--resizer-handle);
+            border-radius: 2px;
+        }
+
+        .resizer-v .resizer-handle {
+            width: 40px;
+            height: 4px;
+        }
+
+        body.layout-vertical .resizer-h {
+            display: none;
+        }
+
+        body.layout-vertical .resizer-v {
+            display: flex;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 8px 3px 8px;
+            background: var(--bg-secondary);
+            border-radius: 8px 8px 0 0;
+            border: 1px solid var(--border-color);
+            border-bottom: none;
+            flex-shrink: 0;
+        }
+
+        .input-toolbar {
+            display: flex;
+            justify-content: space-between;
+            padding: 2px 8px 4px 8px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-top: none;
+            border-bottom: none;
+            flex-shrink: 0;
+        }
+
+        /* 修改间距 新增工具栏分组样式 */
+        .toolbar-group {
+            display: flex;
+            /* 修改间距 按钮横向间距缩小一半 (12px -> 6px) */
+            gap: 6px;
+            align-items: stretch;
+        }
+
+        .output-toolbar {
+            display: flex;
+            justify-content: space-between;
+            padding: 2px 8px 4px 8px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-top: none;
+            border-bottom: none;
+            flex-shrink: 0;
+        }
+
+        .panel-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .panel-info {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .panel-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        textarea {
+            width: 100%;
+            /* 修改间距 文本框内部间距改为 1.5 倍 (8px -> 12px) */
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 0 0 8px 8px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 13px;
+            line-height: 21px;
+            resize: none;
+            outline: none;
+            transition: border-color 0.2s;
+            flex: 1;
+            min-height: 0;
+            overflow: auto;
+            box-sizing: border-box;
+            background: var(--bg-input);
+            color: var(--text-primary);
+        }
+
+        textarea:focus {
+            border-color: var(--btn-primary-bg);
+        }
+
+        #input {
+            background: var(--bg-input);
+        }
+
+        .output-wrapper {
+            width: 100%;
+            /* 修改间距 文本框内部间距改为 1.5 倍 (8px -> 12px) */
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 0 0 8px 8px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 13px;
+            line-height: 21px;
+            overflow: auto;
+            background: var(--bg-secondary);
+            box-sizing: border-box;
+            flex: 1;
+            min-height: 0;
+            color: var(--text-primary);
+        }
+
+        .output-wrapper:empty::before {
+            content: attr(data-placeholder);
+            color: var(--placeholder-color);
+        }
+
+        /* Toast 提示样式 */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 9999;
+            opacity: 0;
+            transition: all 0.3s ease;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            background: #ecfdf5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .toast.error {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        .indent-selector {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--small-btn-bg);
+            padding: 4px 5px;
+            border-radius: 4px;
+            border: none;
+            box-sizing: border-box;
+            height: 24px;
+        }
+
+        .indent-selector label {
+            font-size: 12px;
+            color: var(--small-btn-text);
+            font-weight: normal;
+            line-height: 1;
+        }
+
+        .indent-selector select {
+            padding: 0px 4px;
+            border: 1px solid var(--select-border);
+            border-radius: 3px;
+            font-size: 12px;
+            outline: none;
+            background: var(--select-bg);
+            color: var(--select-text);
+            cursor: pointer;
+            line-height: 1;
+            height: auto;
+            font-weight: normal;
+        }
+
+        .indent-selector select:hover {
+            border-color: var(--select-hover);
+        }
+
+        .small-btn {
+            /* 修改间距 按钮内间距缩小一半 (4px 10px -> 4px 5px) */
+            padding: 4px 5px;
+            font-size: 12px;
+            background: var(--small-btn-bg);
+            color: var(--small-btn-text);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            height: 24px;
+        }
+
+        .small-btn:hover {
+            background: var(--small-btn-hover);
+        }
+
+        /* JSON 语法高亮样式 */
+        .CodeContainer {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            word-break: break-all;
+            overflow-wrap: break-word;
+            max-width: 100%;
+        }
+
+        .ObjectBrace {
+            color: var(--syntax-brace-obj);
+            font-weight: bold;
+        }
+
+        .ArrayBrace {
+            color: var(--syntax-brace-arr);
+            font-weight: bold;
+        }
+
+        .PropertyName {
+            color: var(--syntax-key);
+            font-weight: bold;
+        }
+
+        .String {
+            color: var(--syntax-string);
+        }
+
+        .Number {
+            color: var(--syntax-number);
+        }
+
+        .Boolean {
+            color: var(--syntax-boolean);
+        }
+
+        .Null {
+            color: var(--syntax-null);
+        }
+
+        .Comma {
+            color: var(--syntax-comma);
+            font-weight: bold;
+        }
+
+        /* 折叠图标样式 */
+        .collapse-icon {
+            cursor: pointer;
+            user-select: none;
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            text-align: center;
+            line-height: 16px;
+            font-size: 12px;
+            color: var(--collapse-icon-color);
+            background: var(--collapse-icon-bg);
+            border-radius: 3px;
+            margin-right: 4px;
+            vertical-align: middle;
+            transition: all 0.15s;
+        }
+
+        .collapse-icon:hover {
+            background: var(--collapse-icon-hover);
+        }
+
+        .copy-icon {
+            cursor: pointer;
+            user-select: none;
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            text-align: center;
+            line-height: 16px;
+            font-size: 10px;
+            color: var(--collapse-icon-color);
+            background: var(--collapse-icon-bg);
+            border-radius: 3px;
+            margin-right: 4px;
+            vertical-align: middle;
+            transition: all 0.15s;
+            font-style: normal;
+        }
+
+        .copy-icon:hover {
+            background: var(--collapse-icon-hover);
+        }
+
+        .copy-icon.copied {
+            color: #16a34a;
+        }
+
+        .collapsible {
+            display: inline;
+        }
+
+        .collapsible.hidden {
+            display: none;
+        }
+
+        .ellipsis {
+            color: #999;
+            font-style: italic;
+            display: none;
+        }
+
+        .ellipsis.show {
+            display: inline;
+        }
+
+        .header-controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .theme-toggle,
+        .lang-toggle {
+            height: 40px;
+            width: 40px;
+            padding: 0;
+            border-radius: 8px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+            color: var(--text-primary);
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s;
+        }
+
+        .theme-toggle:hover,
+        .lang-toggle:hover {
+            background: var(--btn-secondary-hover);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header-controls">
+        <button id="themeToggle" class="theme-toggle" onclick="toggleTheme()" title="切换主题 (自动/浅色/深色)">🌓</button>
+        <button id="langToggle" class="lang-toggle" onclick="toggleLang()" title="切换语言 (自动/中文/English)">🌐</button>
+    </div>
+    <div class="container">
+        <h1><span style="cursor:pointer" onclick="tryFillExample()" title="点击填充示例数据">{ }</span> <span
+                id="pageTitle">JSON 格式化工具</span></h1>
+
+        <div class="editor-container" id="editorContainer">
+            <div class="editor-panel" id="leftPanel">
+                <div class="panel-header">
+                    <span class="panel-title" id="inputPanelTitle">待格式化 JSON</span>
+                    <span class="panel-info" id="inputInfo">0 字符</span>
+                </div>
+                <div class="input-toolbar">
+                    <!-- 修改间距 使用 class 替代内联样式，gap 缩小一半 -->
+                    <div class="toolbar-group">
+                        <button class="small-btn" id="btnFormat" onclick="formatJSON()">格式化</button>
+                        <button class="small-btn" id="btnCompress" onclick="compressJSON()">压缩</button>
+                        <button class="small-btn" id="btnValidate" onclick="validateJSON()">验证</button>
+                    </div>
+                    <!-- 修改间距 margin-left 缩小一半 (12px -> 6px) -->
+                    <div class="toolbar-group" style="margin-left: 6px;">
+                        <button class="small-btn" id="btnCopyInput" onclick="copyInput()">复制</button>
+                        <button class="small-btn" id="btnClearInput" onclick="clearInput()">清空</button>
+                    </div>
+                </div>
+                <textarea id="input" placeholder="在此粘贴需要格式化的 JSON..." oninput="updateInputInfo()"></textarea>
+            </div>
+
+            <!-- 水平拖拽条 -->
+            <div class="resizer resizer-h" id="resizerH">
+                <div class="resizer-handle"></div>
+            </div>
+
+            <!-- 垂直拖拽条 -->
+            <div class="resizer resizer-v" id="resizerV">
+                <div class="resizer-handle"></div>
+            </div>
+
+            <div class="editor-panel" id="rightPanel">
+                <div class="panel-header">
+                    <span class="panel-title" id="outputPanelTitle">格式化结果</span>
+                    <span class="panel-info" id="outputInfo">0 字符</span>
+                </div>
+                <div class="output-toolbar">
+                    <!-- 修改间距 使用 class 替代内联样式，gap 缩小一半 -->
+                    <div class="toolbar-group">
+                        <div class="indent-selector">
+                            <label for="indent" id="labelIndent">缩进:</label>
+                            <select id="indent" onchange="onIndentChange()">
+                                <option value="2" id="optIndent2">2 空格</option>
+                                <option value="4" id="optIndent4">4 空格</option>
+                                <option value="tab" id="optIndentTab">Tab</option>
+                            </select>
+                        </div>
+                        <button class="small-btn" id="toggleCollapseBtn" onclick="toggleCollapseAll()">全部收起</button>
+                    </div>
+                    <!-- 修改间距 margin-left 缩小一半 (12px -> 6px) -->
+                    <div class="toolbar-group" style="margin-left: 6px;">
+                        <button class="small-btn" id="btnCopyOutput" onclick="copyOutput()">复制</button>
+                        <button class="small-btn" id="btnClearOutput" onclick="clearOutput()">清空</button>
+                    </div>
+                </div>
+                <div class="output-wrapper" id="output" data-placeholder="此处将展示格式化结果..."></div>
+            </div>
+        </div>
+
+        <script>
+            // 配置
+            let INDENT_CHAR = '  ';
+            let currentJSON = null;
+
+            function getIndent() {
+                const indent = document.getElementById('indent').value;
+                if (indent === 'tab') {
+                    INDENT_CHAR = '\t';
+                    return '\t';
+                } else {
+                    INDENT_CHAR = ' '.repeat(parseInt(indent));
+                    return parseInt(indent);
+                }
+            }
+
+            function escapeHtml(str) {
+                return str.replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;');
+            }
+
+            function processValue(value, indent, addComma) {
+                const comma = addComma ? '<span class="Comma">,</span>' : '';
+                const type = typeof value;
+
+                if (value === null) {
+                    return `<span class="Null">null</span>${comma}`;
+                }
+
+                if (type === 'boolean') {
+                    return `<span class="Boolean">${value}</span>${comma}`;
+                }
+
+                if (type === 'number') {
+                    return `<span class="Number">${value}</span>${comma}`;
+                }
+
+                if (type === 'string') {
+                    return `<span class="String">${escapeHtml(JSON.stringify(value))}</span>${comma}`;
+                }
+
+                if (Array.isArray(value)) {
+                    return processArray(value, indent, comma);
+                }
+
+                if (type === 'object') {
+                    return processObject(value, indent, comma);
+                }
+
+                return `${value}${comma}`;
+            }
+
+            function processArray(arr, indent, comma) {
+                if (arr.length === 0) {
+                    return `<span class="ArrayBrace">[]</span>${comma}`;
+                }
+
+                const tabs = INDENT_CHAR.repeat(indent);
+                const innerTabs = INDENT_CHAR.repeat(indent + 1);
+
+                let html = `<span class="ArrayBrace">[</span><span class="collapse-icon" onclick="toggleCollapse(this)">−</span><span class="copy-icon" onclick="copySection(this)" title="Copy">⧉</span><span class="collapsible">`;
+
+                for (let i = 0; i < arr.length; i++) {
+                    const isLast = i === arr.length - 1;
+                    html += `\n${innerTabs}${processValue(arr[i], indent + 1, !isLast)}`;
+                }
+
+                html += `\n${tabs}</span><span class="ellipsis">...</span><span class="ArrayBrace">]</span>${comma}`;
+
+                return html;
+            }
+
+            function processObject(obj, indent, comma) {
+                const keys = Object.keys(obj);
+                if (keys.length === 0) {
+                    return `<span class="ObjectBrace">{}</span>${comma}`;
+                }
+
+                const tabs = INDENT_CHAR.repeat(indent);
+                const innerTabs = INDENT_CHAR.repeat(indent + 1);
+
+                let html = `<span class="ObjectBrace">{</span><span class="collapse-icon" onclick="toggleCollapse(this)">−</span><span class="copy-icon" onclick="copySection(this)" title="Copy">⧉</span><span class="collapsible">`;
+
+                for (let i = 0; i < keys.length; i++) {
+                    const key = keys[i];
+                    const isLast = i === keys.length - 1;
+                    html += `\n${innerTabs}<span class="PropertyName">"${escapeHtml(key)}"</span>: ${processValue(obj[key], indent + 1, !isLast)}`;
+                }
+
+                html += `\n${tabs}</span><span class="ellipsis">...</span><span class="ObjectBrace">}</span>${comma}`;
+
+                return html;
+            }
+
+            function formatJSON() {
+                const input = document.getElementById('input').value.trim();
+                const output = document.getElementById('output');
+
+                if (!input) {
+                    showToast(getText('toastInputEmpty'), 'error');
+                    return;
+                }
+
+                try {
+                    getIndent();
+                    currentJSON = JSON.parse(input);
+                    const html = `<pre class="CodeContainer">${processValue(currentJSON, 0, false)}</pre>`;
+                    output.innerHTML = html;
+                    updateToggleButton();
+                    updateOutputInfo();
+                } catch (e) {
+                    output.innerHTML = '';
+                    currentJSON = null;
+                    showToast(getText('toastJsonError') + e.message, 'error');
+                    updateOutputInfo();
+                    updateToggleButton();
+                }
+            }
+
+            function onIndentChange() {
+                if (!currentJSON) return;
+                getIndent();
+                const output = document.getElementById('output');
+                output.innerHTML = `<pre class="CodeContainer">${processValue(currentJSON, 0, false)}</pre>`;
+                updateToggleButton();
+                updateOutputInfo();
+            }
+
+            function toggleCollapse(icon) {
+                const copyIcon = icon.nextElementSibling;
+                const collapsible = copyIcon.nextElementSibling;
+                const ellipsis = collapsible.nextElementSibling;
+
+                if (collapsible.classList.contains('hidden')) {
+                    collapsible.classList.remove('hidden');
+                    ellipsis.classList.remove('show');
+                    icon.classList.remove('collapsed');
+                    icon.textContent = '−';
+                } else {
+                    collapsible.classList.add('hidden');
+                    ellipsis.classList.add('show');
+                    icon.classList.add('collapsed');
+                    icon.textContent = '+';
+                }
+                updateToggleButton();
+            }
+
+            function copySection(copyIcon) {
+                // Structure: openBrace → collapseIcon → copyIcon → collapsible → ellipsis → closeBrace
+                const collapseIcon = copyIcon.previousElementSibling;
+                const openBrace = collapseIcon.previousElementSibling;
+                const collapsible = copyIcon.nextElementSibling;
+                const ellipsis = collapsible.nextElementSibling;
+                const closeBrace = ellipsis.nextElementSibling;
+
+                // Clone collapsible content, remove icons and ellipsis
+                const clone = collapsible.cloneNode(true);
+                clone.querySelectorAll('.collapse-icon, .copy-icon, .ellipsis').forEach(el => el.remove());
+
+                const raw = openBrace.textContent + clone.textContent.trimEnd() + '\n' + closeBrace.textContent;
+
+                // Remove excess indentation from inner lines, keeping one indent level
+                const lines = raw.split('\n');
+                if (lines.length > 2) {
+                    const innerLines = lines.slice(1, -1);
+                    const indents = innerLines.filter(l => l.trim()).map(l => l.match(/^(\s*)/)[1].length);
+                    const minIndent = Math.min(...indents);
+                    const remove = minIndent - INDENT_CHAR.length;
+                    if (remove > 0) {
+                        for (let i = 1; i < lines.length - 1; i++) {
+                            lines[i] = lines[i].slice(remove);
+                        }
+                    }
+                }
+                const text = lines.join('\n');
+
+                navigator.clipboard.writeText(text).then(() => {
+                    // Brief visual feedback
+                    copyIcon.classList.add('copied');
+                    const orig = copyIcon.textContent;
+                    copyIcon.textContent = '✓';
+                    setTimeout(() => {
+                        copyIcon.textContent = orig;
+                        copyIcon.classList.remove('copied');
+                    }, 1000);
+                }).catch(() => {
+                    const textarea = document.createElement('textarea');
+                    textarea.value = text;
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                });
+            }
+
+            function toggleCollapseAll() {
+                const icons = document.querySelectorAll('.collapse-icon');
+                const hasCollapsed = Array.from(icons).some(icon => icon.classList.contains('collapsed'));
+
+                if (hasCollapsed) {
+                    expandAll();
+                } else {
+                    collapseAll();
+                }
+            }
+
+            function expandAll() {
+                const icons = document.querySelectorAll('.collapse-icon');
+                icons.forEach(icon => {
+                    const copyIcon = icon.nextElementSibling;
+                    const collapsible = copyIcon.nextElementSibling;
+                    const ellipsis = collapsible.nextElementSibling;
+                    collapsible.classList.remove('hidden');
+                    ellipsis.classList.remove('show');
+                    icon.classList.remove('collapsed');
+                    icon.textContent = '−';
+                });
+                updateToggleButton();
+                updateOutputInfo();
+            }
+
+            function collapseAll() {
+                const icons = document.querySelectorAll('.collapse-icon');
+                icons.forEach(icon => {
+                    const copyIcon = icon.nextElementSibling;
+                    const collapsible = copyIcon.nextElementSibling;
+                    const ellipsis = collapsible.nextElementSibling;
+                    collapsible.classList.add('hidden');
+                    ellipsis.classList.add('show');
+                    icon.classList.add('collapsed');
+                    icon.textContent = '+';
+                });
+                updateToggleButton();
+                updateOutputInfo();
+            }
+
+            function updateToggleButton() {
+                const btn = document.getElementById('toggleCollapseBtn');
+                const icons = document.querySelectorAll('.collapse-icon');
+
+                if (icons.length === 0) {
+                    btn.disabled = true;
+                    btn.style.opacity = '0.5';
+                    btn.style.cursor = 'not-allowed';
+                    btn.textContent = getText('toggleCollapseBtn');
+                    return;
+                }
+
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+
+                const hasCollapsed = Array.from(icons).some(icon => icon.classList.contains('collapsed'));
+
+                if (hasCollapsed) {
+                    btn.textContent = getText('toggleExpandBtn');
+                } else {
+                    btn.textContent = getText('toggleCollapseBtn');
+                }
+            }
+
+            function compressJSON() {
+                const input = document.getElementById('input').value.trim();
+                const output = document.getElementById('output');
+
+                if (!input) {
+                    showToast(getText('toastInputEmpty'), 'error');
+                    return;
+                }
+
+                try {
+                    const parsed = JSON.parse(input);
+                    const compressed = JSON.stringify(parsed);
+                    output.innerHTML = `<pre class="CodeContainer">${escapeHtml(compressed)}</pre>`;
+                    showToast(getText('toastCompressSuccess') + (input.length - compressed.length) + getText('toastCompressChars'), 'success');
+                    updateOutputInfo();
+                    updateToggleButton();
+                } catch (e) {
+                    output.innerHTML = '';
+                    showToast(getText('toastJsonError') + e.message, 'error');
+                    updateOutputInfo();
+                    updateToggleButton();
+                }
+            }
+
+            function validateJSON() {
+                const input = document.getElementById('input').value.trim();
+
+                if (!input) {
+                    showToast(getText('toastInputEmpty'), 'error');
+                    return;
+                }
+
+                try {
+                    JSON.parse(input);
+                    showToast(getText('toastJsonValid'), 'success');
+                } catch (e) {
+                    showToast(getText('toastJsonError') + e.message, 'error');
+                }
+            }
+
+            function clearAll() {
+                document.getElementById('input').value = '';
+                document.getElementById('output').innerHTML = '';
+                currentJSON = null;
+                updateInputInfo();
+                updateOutputInfo();
+            }
+
+            function clearOutput() {
+                const output = document.getElementById('output');
+                if (!output.innerHTML) {
+                    showToast(getText('toastClearEmpty'), 'error');
+                    return;
+                }
+                output.innerHTML = '';
+                currentJSON = null;
+                updateOutputInfo();
+                updateToggleButton();
+                showToast(getText('toastClearOutputSuccess'), 'success');
+            }
+
+            function copyInput() {
+                const input = document.getElementById('input');
+                if (!input.value) {
+                    showToast(getText('toastCopyEmpty'), 'error');
+                    return;
+                }
+
+                navigator.clipboard.writeText(input.value).then(() => {
+                    showToast(getText('toastCopySuccess'), 'success');
+                }).catch(() => {
+                    // 降级方案
+                    input.select();
+                    document.execCommand('copy');
+                    showToast(getText('toastCopySuccess'), 'success');
+                });
+            }
+
+            function clearInput() {
+                const input = document.getElementById('input');
+                if (!input.value) {
+                    showToast(getText('toastClearEmpty'), 'error');
+                    return;
+                }
+                input.value = '';
+                updateInputInfo();
+                showToast(getText('toastClearSuccess'), 'success');
+            }
+
+            function copyOutput() {
+                const output = document.getElementById('output');
+                if (!output.textContent) {
+                    showToast(getText('toastCopyEmpty'), 'error');
+                    return;
+                }
+
+                // 克隆输出内容，移除三角符号、拷贝按钮和省略号
+                const clone = output.cloneNode(true);
+                clone.querySelectorAll('.collapse-icon, .copy-icon, .ellipsis').forEach(el => el.remove());
+
+                // 获取纯文本内容（不含HTML标签、三角符号和省略号）
+                const textContent = clone.textContent;
+
+                navigator.clipboard.writeText(textContent).then(() => {
+                    showToast(getText('toastCopySuccess'), 'success');
+                }).catch(() => {
+                    // 降级方案
+                    const textarea = document.createElement('textarea');
+                    textarea.value = textContent;
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    showToast(getText('toastCopySuccess'), 'success');
+                });
+            }
+
+            function showToast(message, type, duration = 3000) {
+                // 移除已存在的toast
+                const existingToast = document.querySelector('.toast');
+                if (existingToast) {
+                    existingToast.remove();
+                }
+
+                // 创建新的toast
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                toast.textContent = message;
+                document.body.appendChild(toast);
+
+                // 显示toast
+                requestAnimationFrame(() => {
+                    toast.classList.add('show');
+                });
+
+                // 自动隐藏
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                    setTimeout(() => {
+                        toast.remove();
+                    }, 300);
+                }, duration);
+            }
+
+            function updateInputInfo() {
+                const input = document.getElementById('input').value;
+                document.getElementById('inputInfo').textContent = input.length + getText('labelChars');
+            }
+
+            function updateOutputInfo() {
+                const output = document.getElementById('output');
+                if (!output.textContent) {
+                    document.getElementById('outputInfo').textContent = '0' + getText('labelChars');
+                    return;
+                }
+
+                // 克隆输出内容，移除三角符号、拷贝按钮和省略号
+                const clone = output.cloneNode(true);
+                clone.querySelectorAll('.collapse-icon, .copy-icon, .ellipsis').forEach(el => el.remove());
+
+                // 计算字符数（排除三角符号和省略号）
+                const charCount = clone.textContent.length;
+                document.getElementById('outputInfo').textContent = charCount + getText('labelChars');
+            }
+
+            // 支持快捷键
+            document.addEventListener('keydown', function (e) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    formatJSON();
+                }
+            });
+
+            const exampleData = {
+                zh: `{"name":"张三","age":28,"email":"zhangsan@example.com","isActive":true,"score":null,"address":{"city":"北京","district":"朝阳区","street":"建国路100号","zipCode":"100020"},"hobbies":["读书","旅行","摄影","编程"],"education":[{"school":"清华大学","degree":"本科","year":2018},{"school":"北京大学","degree":"硕士","year":2021}]}`,
+                en: `{"name":"John Smith","age":28,"email":"john.smith@example.com","isActive":true,"score":null,"address":{"city":"New York","state":"NY","street":"100 Broadway","zipCode":"10001"},"hobbies":["reading","traveling","photography","coding"],"education":[{"school":"MIT","degree":"Bachelor","year":2018},{"school":"Stanford","degree":"Master","year":2021}]}`
+            };
+
+            function tryFillExample() {
+                const input = document.getElementById('input');
+                const output = document.getElementById('output');
+
+                if (!input.value.trim() && !output.textContent.trim()) {
+                    input.value = exampleData[getLang()] || exampleData.zh;
+                    updateInputInfo();
+                    formatJSON();
+                    showToast(getText('toastFillExample'), 'success');
+                }
+            }
+
+            // 布局配置
+            const layoutConfig = {
+                zh: {
+                    // 最小宽度计算（确保工具栏按钮不换行）
+                    // 最宽行：右侧输出工具栏
+                    //   Group1: "📁 全部收起"(~76) + gap(6) + indent-selector(~106) = 188
+                    //   Group间距: 6
+                    //   Group2: "📋 复制"(~52) + gap(6) + "🗑️ 清空"(~52) = 110
+                    //   工具栏开销(padding 8*2 + border 1*2): 18
+                    //   合计: 188+6+110+18 = 322 → 取 330
+                    // Container: Panel*2 + Resizer(12+margin 8*2=28) + ContainerPadding(15*2) + ContainerBorder(1*2) = 720
+                    // Breakpoint: Container + BodyPadding(15*2) = 750
+                    // VerticalContainer: Panel + ContainerPadding(30) + ContainerBorder(2) = 362
+                    panelMinWidth: 280,
+                    verticalBreakpoint: 750,
+                    containerMinWidth: 720,
+                    verticalContainerMinWidth: 362
+                },
+                en: {
+                    // 最小宽度计算（确保工具栏按钮不换行）
+                    // 最宽行：右侧输出工具栏
+                    //   Group1: "📁 Collapse All"(~112) + gap(6) + indent-selector(~134) = 252
+                    //   Group间距: 6
+                    //   Group2: "📋 Copy"(~56) + gap(6) + "🗑️ Clear"(~63) = 125
+                    //   工具栏开销(padding 8*2 + border 1*2): 18
+                    //   合计: 252+6+125+18 = 401 → 取 380
+                    // Container: 380*2 + 28 + 30 + 2 = 820
+                    // Breakpoint: 820 + 30 = 850
+                    // VerticalContainer: 380 + 32 = 412
+                    panelMinWidth: 330,
+                    verticalBreakpoint: 850,
+                    containerMinWidth: 820,
+                    verticalContainerMinWidth: 412
+                }
+            };
+
+            let currentLayoutConfig = layoutConfig.zh;
+
+            function updateLayout() {
+                const width = window.innerWidth;
+                // 确保 currentLayoutConfig 存在
+                const config = currentLayoutConfig || layoutConfig.zh;
+                const isVertical = width <= config.verticalBreakpoint;
+                const container = document.getElementById('editorContainer');
+
+                if (isVertical) {
+                    document.body.classList.add('layout-vertical');
+                    // 切换到垂直布局时，清除水平布局的内联样式
+                    if (container) {
+                        container.style.gridTemplateColumns = '';
+                    }
+                } else {
+                    document.body.classList.remove('layout-vertical');
+                    // 切换到水平布局时，清除垂直布局的内联样式
+                    if (container) {
+                        container.style.gridTemplateRows = '';
+                    }
+                }
+
+                // 更新 CSS 变量
+                document.documentElement.style.setProperty('--panel-min-width', config.panelMinWidth + 'px');
+                document.documentElement.style.setProperty('--container-min-width', config.containerMinWidth + 'px');
+                document.documentElement.style.setProperty('--vertical-container-min-width', config.verticalContainerMinWidth + 'px');
+            }
+
+            // 拖拽调整大小功能
+            (function () {
+                const container = document.getElementById('editorContainer');
+                const leftPanel = document.getElementById('leftPanel');
+                const rightPanel = document.getElementById('rightPanel');
+                const resizerH = document.getElementById('resizerH');
+                const resizerV = document.getElementById('resizerV');
+
+                let isDragging = false;
+                // 获取可用于面板的总高度（受当前实际渲染高度影响）
+                function getAvailablePanelHeight() {
+                    const style = getComputedStyle(container);
+                    const contentHeight = container.clientHeight
+                        - parseFloat(style.paddingTop)
+                        - parseFloat(style.paddingBottom);
+                    const resizerStyle = getComputedStyle(resizerV);
+                    const resizerTotal = resizerV.offsetHeight
+                        + parseFloat(resizerStyle.marginTop)
+                        + parseFloat(resizerStyle.marginBottom);
+                    return contentHeight - resizerTotal;
+                }
+
+                // 获取视口真实能提供的面板总高度（不受当前 inline style 强撑的影响）
+                function getTrueAvailablePanelHeight() {
+                    if (!isVerticalLayout()) return getAvailablePanelHeight();
+
+                    const wrapperContainer = document.querySelector('.container');
+                    const oldWrapperMinHeight = wrapperContainer.style.getPropertyValue('min-height');
+                    const oldContainerMinHeight = container.style.getPropertyValue('min-height');
+                    const oldGrid = container.style.getPropertyValue('grid-template-rows');
+
+                    // 临时去掉限制以测量视口真正能给的高度
+                    wrapperContainer.style.setProperty('min-height', '0px', 'important');
+                    container.style.setProperty('min-height', '0px', 'important');
+                    container.style.setProperty('grid-template-rows', '0px auto 0px', 'important');
+
+                    const trueAvailable = getAvailablePanelHeight();
+
+                    // 恢复
+                    if (oldWrapperMinHeight) wrapperContainer.style.setProperty('min-height', oldWrapperMinHeight);
+                    else wrapperContainer.style.removeProperty('min-height');
+
+                    if (oldContainerMinHeight) container.style.setProperty('min-height', oldContainerMinHeight);
+                    else container.style.removeProperty('min-height');
+
+                    if (oldGrid) container.style.setProperty('grid-template-rows', oldGrid);
+                    else container.style.removeProperty('grid-template-rows');
+
+                    return trueAvailable;
+                }
+
+                // 根据存储的比例重新计算并应用像素值
+                function applyVerticalRatio() {
+                    if (verticalDragRatio === null || !isVerticalLayout()) return;
+                    const available = getAvailablePanelHeight();
+                    if (available <= 0) return;
+
+                    let topH = Math.round(available * verticalDragRatio);
+                    let bottomH = available - topH;
+
+                    if (topH < PANEL_MIN_HEIGHT) {
+                        topH = PANEL_MIN_HEIGHT;
+                        bottomH = available - topH;
+                    }
+                    if (bottomH < PANEL_MIN_HEIGHT) {
+                        bottomH = PANEL_MIN_HEIGHT;
+                        topH = available - bottomH;
+                    }
+
+                    container.style.gridTemplateRows = `${topH}px auto ${bottomH}px`;
+                }
+
+                // 垂直拖拽时限制最小高度并应用像素值
+                function applyVerticalDrag(newTopHeight, newBottomHeight) {
+                    let available = startLeftSize + startRightSize;
+
+                    if (newTopHeight < PANEL_MIN_HEIGHT) {
+                        newTopHeight = PANEL_MIN_HEIGHT;
+                        newBottomHeight = available - PANEL_MIN_HEIGHT;
+                    }
+                    if (newBottomHeight < PANEL_MIN_HEIGHT) {
+                        newBottomHeight = PANEL_MIN_HEIGHT;
+                        newTopHeight = available - PANEL_MIN_HEIGHT;
+                    }
+
+                    // 保持未固定的一侧按内容(1fr)自动吸收高度变化，从而保证总高度不变
+                    if (verticalFixedSide === 'top') {
+                        container.style.gridTemplateRows = `${newTopHeight}px auto 1fr`;
+                    } else {
+                        container.style.gridTemplateRows = `1fr auto ${newBottomHeight}px`;
+                    }
+                }
+
+                let isVertical = false;
+                let startPos = 0;
+                let startLeftSize = 0;
+                let startRightSize = 0;
+
+                // --- 新增：垂直布局自适应缩放状态追踪 ---
+                let verticalFixedSide = 'top'; // 'top' 或 'bottom'
+                let lastScreenY = window.screenY;
+                let lastWindowHeight = window.innerHeight;
+                let lastTopHeight = 0;
+                let lastBottomHeight = 0;
+                let wasVertical = false;
+
+                const PANEL_MIN_HEIGHT = 140; // 与 CSS --vertical-panel-min-height 一致
+
+                function isVerticalLayout() {
+                    const config = currentLayoutConfig || layoutConfig.zh;
+                    return window.innerWidth <= config.verticalBreakpoint;
+                }
+
+                function updateTrackedHeights() {
+                    if (!isVerticalLayout()) return;
+                    lastTopHeight = leftPanel.offsetHeight;
+                    lastBottomHeight = rightPanel.offsetHeight;
+                }
+                setTimeout(updateTrackedHeights, 100);
+
+                // 水平拖拽
+                resizerH.addEventListener('mousedown', (e) => {
+                    if (isVerticalLayout()) return;
+                    isDragging = true;
+                    isVertical = false;
+                    startPos = e.clientX;
+                    startLeftSize = leftPanel.offsetWidth;
+                    startRightSize = rightPanel.offsetWidth;
+                    resizerH.classList.add('dragging');
+                    document.body.style.cursor = 'col-resize';
+                    document.body.style.userSelect = 'none';
+                    e.preventDefault();
+                });
+
+                // 垂直拖拽 (PC)
+                resizerV.addEventListener('mousedown', (e) => {
+                    if (!isVerticalLayout()) return;
+                    isDragging = true;
+                    isVertical = true;
+                    startPos = e.clientY;
+                    startLeftSize = leftPanel.offsetHeight;
+                    startRightSize = rightPanel.offsetHeight;
+                    resizerV.classList.add('dragging');
+                    document.body.style.cursor = 'row-resize';
+                    document.body.style.userSelect = 'none';
+
+                    // 拖拽开始时锁定当前状态，避免高度跳动
+                    if (verticalFixedSide === 'top') {
+                        container.style.gridTemplateRows = `${startLeftSize}px auto 1fr`;
+                    } else {
+                        container.style.gridTemplateRows = `1fr auto ${startRightSize}px`;
+                    }
+                    e.preventDefault();
+                });
+
+                document.addEventListener('mousemove', (e) => {
+                    if (!isDragging) return;
+
+                    if (!isVertical) {
+                        // 水平拖拽
+                        const delta = e.clientX - startPos;
+                        const totalWidth = startLeftSize + startRightSize;
+
+                        let newLeftWidth = startLeftSize + delta;
+                        let newRightWidth = totalWidth - newLeftWidth;
+
+                        // 限制最小宽度
+                        const minWidth = currentLayoutConfig.panelMinWidth;
+                        if (newLeftWidth < minWidth) {
+                            newLeftWidth = minWidth;
+                            newRightWidth = totalWidth - minWidth;
+                        }
+                        if (newRightWidth < minWidth) {
+                            newRightWidth = minWidth;
+                            newLeftWidth = totalWidth - minWidth;
+                        }
+
+                        container.style.gridTemplateColumns = `${newLeftWidth}fr auto ${newRightWidth}fr`;
+                    } else {
+                        // 垂直拖拽
+                        const delta = e.clientY - startPos;
+                        applyVerticalDrag(startLeftSize + delta, startRightSize - delta);
+                    }
+                });
+
+                document.addEventListener('mouseup', () => {
+                    if (isDragging) {
+                        isDragging = false;
+                        resizerH.classList.remove('dragging');
+                        resizerV.classList.remove('dragging');
+                        document.body.style.cursor = '';
+                        document.body.style.userSelect = '';
+                        if (isVertical) {
+                            updateTrackedHeights();
+                        }
+                    }
+                });
+
+                // 触摸支持 - 水平
+                resizerH.addEventListener('touchstart', (e) => {
+                    if (isVerticalLayout()) return;
+                    isDragging = true;
+                    isVertical = false;
+                    startPos = e.touches[0].clientX;
+                    startLeftSize = leftPanel.offsetWidth;
+                    startRightSize = rightPanel.offsetWidth;
+                    resizerH.classList.add('dragging');
+                    e.preventDefault();
+                });
+
+                // 触摸支持 - 垂直
+                resizerV.addEventListener('touchstart', (e) => {
+                    if (!isVerticalLayout()) return;
+                    isDragging = true;
+                    isVertical = true;
+                    startPos = e.touches[0].clientY;
+                    startLeftSize = leftPanel.offsetHeight;
+                    startRightSize = rightPanel.offsetHeight;
+                    resizerV.classList.add('dragging');
+
+                    if (verticalFixedSide === 'top') {
+                        container.style.gridTemplateRows = `${startLeftSize}px auto 1fr`;
+                    } else {
+                        container.style.gridTemplateRows = `1fr auto ${startRightSize}px`;
+                    }
+                    e.preventDefault();
+                });
+
+                document.addEventListener('touchmove', (e) => {
+                    if (!isDragging) return;
+                    const touch = e.touches[0];
+
+                    if (!isVertical) {
+                        const delta = touch.clientX - startPos;
+                        const totalWidth = startLeftSize + startRightSize;
+
+                        let newLeftWidth = startLeftSize + delta;
+                        let newRightWidth = totalWidth - newLeftWidth;
+
+                        const minWidth = currentLayoutConfig.panelMinWidth;
+                        if (newLeftWidth >= minWidth && newRightWidth >= minWidth) {
+                            container.style.gridTemplateColumns = `${newLeftWidth}fr auto ${newRightWidth}fr`;
+                        }
+                    } else {
+                        const delta = touch.clientY - startPos;
+                        applyVerticalDrag(startLeftSize + delta, startRightSize - delta);
+                    }
+                });
+
+                document.addEventListener('touchend', () => {
+                    if (isDragging) {
+                        isDragging = false;
+                        resizerH.classList.remove('dragging');
+                        resizerV.classList.remove('dragging');
+                        if (isVertical) {
+                            updateTrackedHeights();
+                        }
+                    }
+                });
+
+                let resizeTimeout;
+                // 窗口大小改变时重置布局，以及根据缩放方向改变网格结构
+                window.addEventListener('resize', () => {
+                    const currentlyVertical = isVerticalLayout();
+                    updateLayout();
+
+                    if (currentlyVertical) {
+                        let currentScreenY = window.screenY;
+                        let currentWindowHeight = window.innerHeight;
+
+                        // 仅在之前也是垂直布局时，应用智能缩放逻辑
+                        if (wasVertical && currentWindowHeight !== lastWindowHeight) {
+                            let deltaY = currentScreenY - lastScreenY;
+
+                            // 获取真实可用高度（绕开当前的 min-height 限制）
+                            const trueAvailableHeight = getTrueAvailablePanelHeight();
+
+                            // 从顶部改变窗口高度 (优先缩小上方的框)
+                            if (Math.abs(deltaY) > 0) {
+                                verticalFixedSide = 'bottom';
+                                if (lastBottomHeight > 0) {
+                                    let newTopHeight = trueAvailableHeight - lastBottomHeight;
+                                    if (newTopHeight <= PANEL_MIN_HEIGHT) {
+                                        // 如果上方框达到最小高度，则上方必须保持最小高度，下方用1fr负责吸收剩余空间
+                                        container.style.gridTemplateRows = `${PANEL_MIN_HEIGHT}px auto 1fr`;
+                                    } else {
+                                        // 否则下方框保持不变，上方框(1fr)自动缩小
+                                        container.style.gridTemplateRows = `1fr auto ${lastBottomHeight}px`;
+                                    }
+                                }
+                            } else {
+                                // 从底部改变窗口高度 (优先缩小下方的框)
+                                verticalFixedSide = 'top';
+                                if (lastTopHeight > 0) {
+                                    let newBottomHeight = trueAvailableHeight - lastTopHeight;
+                                    if (newBottomHeight <= PANEL_MIN_HEIGHT) {
+                                        // 如果下方框达到最小高度，则下方必须保持最小高度，上方用1fr负责吸收剩余空间
+                                        container.style.gridTemplateRows = `1fr auto ${PANEL_MIN_HEIGHT}px`;
+                                    } else {
+                                        // 否则上方框保持不变，下方框(1fr)自动缩小
+                                        container.style.gridTemplateRows = `${lastTopHeight}px auto 1fr`;
+                                    }
+                                }
+                            }
+                        }
+
+                        lastScreenY = currentScreenY;
+                        lastWindowHeight = currentWindowHeight;
+
+                        clearTimeout(resizeTimeout);
+                        resizeTimeout = setTimeout(() => {
+                            if (isVerticalLayout()) {
+                                updateTrackedHeights();
+                            }
+                            lastScreenY = window.screenY;
+                            lastWindowHeight = window.innerHeight;
+                        }, 200);
+                    } else {
+                        // 如果从垂直布局变成了水平布局，清除垂直模式下可能带有的 grid-template-rows
+                        if (wasVertical) {
+                            container.style.gridTemplateRows = '';
+                        }
+                    }
+
+                    wasVertical = currentlyVertical;
+                });
+
+                wasVertical = isVerticalLayout();
+            })();
+
+            // 主题切换逻辑
+            const themeToggleBtn = document.getElementById('themeToggle');
+            const html = document.documentElement;
+
+            // 0: auto, 1: light, 2: dark
+            let themeState = 0;
+
+            // 从 localStorage 读取设置
+            const savedTheme = localStorage.getItem('themeState');
+            if (savedTheme !== null) {
+                themeState = parseInt(savedTheme);
+            }
+
+            // 监听系统主题变化
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+                if (themeState === 0) {
+                    updateThemeColor();
+                }
+            });
+
+            function updateThemeColor() {
+                const meta = document.querySelector('meta[name="theme-color"]');
+                if (!meta) return;
+
+                let isDark = false;
+                if (themeState === 2) {
+                    isDark = true;
+                } else if (themeState === 1) {
+                    isDark = false;
+                } else {
+                    isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                }
+
+                // Light: #f1f5f9, Dark: #0f172a
+                meta.content = isDark ? '#0f172a' : '#f1f5f9';
+            }
+
+            function applyTheme() {
+                html.classList.remove('light', 'dark');
+                let icon = '🌓';
+                let title = getText('themeTitleAuto');
+
+                if (themeState === 1) {
+                    html.classList.add('light');
+                    icon = '☀️';
+                    title = getText('themeTitleLight');
+                } else if (themeState === 2) {
+                    html.classList.add('dark');
+                    icon = '🌙';
+                    title = getText('themeTitleDark');
+                }
+
+                themeToggleBtn.textContent = icon;
+                themeToggleBtn.title = title;
+                localStorage.setItem('themeState', themeState);
+                updateThemeColor();
+            }
+
+            function toggleTheme() {
+                themeState = (themeState + 1) % 3;
+                applyTheme();
+            }
+
+            // 多语言支持逻辑
+            const langToggleBtn = document.getElementById('langToggle');
+
+            // 0: auto, 1: zh, 2: en
+            let langState = 0;
+
+            // 从 localStorage 读取设置
+            const savedLang = localStorage.getItem('langState');
+            if (savedLang !== null) {
+                langState = parseInt(savedLang);
+            }
+
+            const translations = {
+                zh: {
+                    pageTitle: 'JSON 格式化工具',
+                    inputPanelTitle: '待格式化 JSON',
+                    outputPanelTitle: '格式化结果',
+                    btnFormat: '格式化',
+                    btnCompress: '压缩',
+                    btnValidate: '验证',
+                    btnCopyInput: '复制',
+                    btnClearInput: '清空',
+                    toggleCollapseBtn: '全部收起',
+                    toggleExpandBtn: '全部展开',
+                    labelIndent: '缩进:',
+                    optIndent2: '2 空格',
+                    optIndent4: '4 空格',
+                    optIndentTab: 'Tab',
+                    btnCopyOutput: '复制',
+                    btnClearOutput: '清空',
+                    inputPlaceholder: '在此粘贴需要格式化的 JSON...',
+                    outputPlaceholder: '此处将展示格式化结果...',
+                    toastCopySuccess: '已复制到剪贴板',
+                    toastCopyEmpty: '没有可复制的内容',
+                    toastClearSuccess: '已清空输入内容',
+                    toastClearEmpty: '没有可清空的内容',
+                    toastFillExample: '已填充示例数据',
+                    toastInputEmpty: '请输入 JSON',
+                    toastJsonError: 'JSON 格式错误：',
+                    toastJsonValid: 'JSON 格式正确',
+                    themeTitleAuto: '切换主题 (自动)',
+                    themeTitleLight: '切换主题 (浅色)',
+                    themeTitleDark: '切换主题 (深色)',
+                    langTitleAuto: '切换语言 (自动)',
+                    langTitleZh: '切换语言 (中文)',
+                    langTitleEn: 'Switch Language (English)',
+                    fillExampleTitle: '点击填充示例数据',
+                    toastCompressSuccess: '压缩成功！节省了 ',
+                    toastCompressChars: ' 字符',
+                    toastClearOutputSuccess: '已清空格式化结果',
+                    labelChars: ' 字符'
+                },
+                en: {
+                    pageTitle: 'JSON Formatter',
+                    inputPanelTitle: 'Input JSON',
+                    outputPanelTitle: 'Formatted JSON',
+                    btnFormat: 'Format',
+                    btnCompress: 'Compress',
+                    btnValidate: 'Validate',
+                    btnCopyInput: 'Copy',
+                    btnClearInput: 'Clear',
+                    toggleCollapseBtn: 'Collapse All',
+                    toggleExpandBtn: 'Expand All',
+                    labelIndent: 'Indent:',
+                    optIndent2: '2 Spaces',
+                    optIndent4: '4 Spaces',
+                    optIndentTab: 'Tab',
+                    btnCopyOutput: 'Copy',
+                    btnClearOutput: 'Clear',
+                    inputPlaceholder: 'Paste JSON here...',
+                    outputPlaceholder: 'Formatted result will appear here...',
+                    toastCopySuccess: 'Copied to clipboard!',
+                    toastCopyEmpty: 'Nothing to copy',
+                    toastClearSuccess: 'Input cleared',
+                    toastClearEmpty: 'Nothing to clear',
+                    toastFillExample: 'Example data filled',
+                    toastInputEmpty: 'Please enter JSON',
+                    toastJsonError: 'Invalid JSON: ',
+                    toastJsonValid: 'Valid JSON',
+                    themeTitleAuto: 'Switch Theme (Auto)',
+                    themeTitleLight: 'Switch Theme (Light)',
+                    themeTitleDark: 'Switch Theme (Dark)',
+                    langTitleAuto: 'Switch Language (Auto)',
+                    langTitleZh: '切换语言 (中文)',
+                    langTitleEn: 'Switch Language (English)',
+                    fillExampleTitle: 'Click to fill example data',
+                    toastCompressSuccess: 'Compressed! Saved ',
+                    toastCompressChars: ' chars',
+                    toastClearOutputSuccess: 'Formatted result cleared',
+                    labelChars: ' chars'
+                }
+            };
+
+            function getLang() {
+                if (langState === 1) return 'zh';
+                if (langState === 2) return 'en';
+                // Auto detection
+                const browserLang = navigator.language || navigator.userLanguage;
+                return browserLang.startsWith('zh') ? 'zh' : 'en';
+            }
+
+            function getText(key) {
+                const lang = getLang();
+                return translations[lang][key] || key;
+            }
+
+            function applyLang() {
+                const lang = getLang();
+                const t = translations[lang];
+
+                // 更新按钮文本和标题
+                let icon = '🌐';
+                let title = t.langTitleAuto;
+
+                if (langState === 1) {
+                    icon = '中';
+                    title = t.langTitleZh;
+                } else if (langState === 2) {
+                    icon = 'En';
+                    title = t.langTitleEn;
+                }
+
+                langToggleBtn.textContent = icon;
+                langToggleBtn.title = title;
+
+                // 调整字体大小，如果是非emoji（选择了中/En）则字体变小更易读
+                if (langState === 0) {
+                    langToggleBtn.style.fontSize = '';
+                    langToggleBtn.style.fontWeight = '';
+                } else {
+                    langToggleBtn.style.fontSize = '14px';
+                    langToggleBtn.style.fontWeight = 'bold';
+                }
+
+                // 更新页面文本
+                document.getElementById('pageTitle').textContent = t.pageTitle;
+                document.getElementById('inputPanelTitle').textContent = t.inputPanelTitle;
+                document.getElementById('outputPanelTitle').textContent = t.outputPanelTitle;
+                document.getElementById('btnFormat').textContent = t.btnFormat;
+                document.getElementById('btnCompress').textContent = t.btnCompress;
+                document.getElementById('btnValidate').textContent = t.btnValidate;
+                document.getElementById('btnCopyInput').textContent = t.btnCopyInput;
+                document.getElementById('btnClearInput').textContent = t.btnClearInput;
+                document.getElementById('labelIndent').textContent = t.labelIndent;
+                document.getElementById('optIndent2').textContent = t.optIndent2;
+                document.getElementById('optIndent4').textContent = t.optIndent4;
+                document.getElementById('optIndentTab').textContent = t.optIndentTab;
+                document.getElementById('btnCopyOutput').textContent = t.btnCopyOutput;
+                document.getElementById('btnClearOutput').textContent = t.btnClearOutput;
+
+                // 更新 placeholder 和 title
+                document.getElementById('input').placeholder = t.inputPlaceholder;
+                document.getElementById('output').setAttribute('data-placeholder', t.outputPlaceholder);
+                document.querySelector('span[onclick="tryFillExample()"]').title = t.fillExampleTitle;
+
+                // 更新折叠按钮状态
+                updateToggleButton();
+
+                // 更新主题按钮 Title
+                applyTheme();
+
+                // 更新信息面板
+                updateInputInfo();
+                updateOutputInfo();
+
+                // 更新布局配置
+                if (layoutConfig[lang]) {
+                    currentLayoutConfig = layoutConfig[lang];
+                } else {
+                    currentLayoutConfig = layoutConfig.zh;
+                }
+                updateLayout();
+
+                // 更新标题宽度测量
+                // 直接同步调用，确保在浏览器首次绘制前完成尺寸调整，防止闪烁
+                updateTitleBreakpoints();
+
+                localStorage.setItem('langState', langState);
+            }
+
+            function toggleLang() {
+                langState = (langState + 1) % 3;
+                applyLang();
+            }
+
+            // 标题自适应逻辑
+            let titleWidths = { 24: 0, 20: 0, 16: 0 };
+
+            function updateTitleBreakpoints() {
+                const h1 = document.querySelector('h1');
+                if (!h1) return;
+
+                // 1. 彻底禁用动画：移除类 + 设置内联样式
+                // 这样可以防止从测量状态(如16px)恢复到最终状态时触发过渡
+                h1.classList.remove('enable-transition');
+                h1.style.transition = 'none';
+
+                // 2. 测量各个尺寸的宽度
+                // 测量 24px
+                h1.classList.remove('title-md', 'title-sm');
+                titleWidths[24] = h1.offsetWidth;
+
+                // 测量 20px
+                h1.classList.add('title-md');
+                titleWidths[20] = h1.offsetWidth;
+
+                // 测量 16px
+                h1.classList.remove('title-md');
+                h1.classList.add('title-sm');
+                titleWidths[16] = h1.offsetWidth;
+
+                // 3. 测量结束，清理尺寸类
+                h1.classList.remove('title-md', 'title-sm');
+
+                // 4. 计算并应用当前应有的尺寸
+                checkTitleSize();
+
+                // 5. 强制重排 (Reflow)
+                // 这一步至关重要：它告诉浏览器"现在立刻应用上面的样式变化"
+                // 由于此时 transition 还是 none，所以这次变化是瞬间完成的，不会有动画
+                void h1.offsetWidth;
+
+                // 6. 恢复动画能力
+                // 之后的窗口缩放触发的 checkTitleSize 就会有动画了
+                h1.style.transition = '';
+                h1.classList.add('enable-transition');
+            }
+
+            function checkTitleSize() {
+                const h1 = document.querySelector('h1');
+                if (!h1) return;
+
+                // 计算可用空间：窗口宽度 - 右侧按钮区域(110px) - 左侧边距(20px) - 最小间距(50px)
+                // 右侧按钮区域：ThemeToggle(Right:70px, Width:40px) -> LeftEdge = WindowWidth - 110px
+                // 实际上 ThemeToggle 左边缘距离右边界是 110px
+                // 所以可用宽度 = WindowWidth - 110 - 20 - 50 = WindowWidth - 180
+                const availableSpace = window.innerWidth - 180;
+
+                h1.classList.remove('title-md', 'title-sm');
+
+                if (availableSpace < titleWidths[24]) {
+                    if (availableSpace < titleWidths[20]) {
+                        h1.classList.add('title-sm');
+                    } else {
+                        h1.classList.add('title-md');
+                    }
+                }
+            }
+
+            window.addEventListener('resize', checkTitleSize);
+
+            // 初始化语言
+            applyLang();
+        </script>
+</body>
+
+</html>
