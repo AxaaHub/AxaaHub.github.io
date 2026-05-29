@@ -726,6 +726,32 @@
             color: #16a34a;
         }
 
+        .count-badge {
+            user-select: none;
+            display: inline-block;
+            height: 16px;
+            line-height: 16px;
+            font-size: 10px;
+            color: var(--collapse-icon-color);
+            background: var(--collapse-icon-bg);
+            border-radius: 3px;
+            margin-right: 4px;
+            padding: 0 5px;
+            vertical-align: middle;
+            font-style: normal;
+        }
+
+        .json-link {
+            color: inherit;
+        }
+
+        body.link-modifier-active .json-link {
+            text-decoration: underline;
+            cursor: pointer;
+            border-radius: 2px;
+            background: var(--small-btn-bg);
+        }
+
         .collapsible {
             display: inline;
         }
@@ -870,6 +896,15 @@
                     .replace(/"/g, '&quot;');
             }
 
+            // 在兄弟节点中按类名向后查找，避免插入 count-badge 后破坏遍历
+            function nextSiblingByClass(el, cls) {
+                let n = el.nextElementSibling;
+                while (n && !n.classList.contains(cls)) {
+                    n = n.nextElementSibling;
+                }
+                return n;
+            }
+
             function processValue(value, indent, addComma) {
                 const comma = addComma ? '<span class="Comma">,</span>' : '';
                 const type = typeof value;
@@ -887,7 +922,12 @@
                 }
 
                 if (type === 'string') {
-                    return `<span class="String">${escapeHtml(JSON.stringify(value))}</span>${comma}`;
+                    const jsonStr = JSON.stringify(value);
+                    if (/^https?:\/\//i.test(value)) {
+                        const inner = jsonStr.slice(1, -1);
+                        return `<span class="String">"<span class="json-link" data-url="${escapeHtml(value)}" onclick="handleLinkClick(event, this)">${escapeHtml(inner)}</span>"</span>${comma}`;
+                    }
+                    return `<span class="String">${escapeHtml(jsonStr)}</span>${comma}`;
                 }
 
                 if (Array.isArray(value)) {
@@ -909,7 +949,7 @@
                 const tabs = INDENT_CHAR.repeat(indent);
                 const innerTabs = INDENT_CHAR.repeat(indent + 1);
 
-                let html = `<span class="ArrayBrace">[</span><span class="collapse-icon" onclick="toggleCollapse(this)">−</span><span class="copy-icon" onclick="copySection(this)" title="Copy">⧉</span><span class="collapsible">`;
+                let html = `<span class="ArrayBrace">[</span><span class="collapse-icon" onclick="toggleCollapse(this)">−</span><span class="copy-icon" onclick="copySection(this)" title="Copy">⧉</span><span class="count-badge" title="${getText('countItemsTitle')}">${arr.length}</span><span class="collapsible">`;
 
                 for (let i = 0; i < arr.length; i++) {
                     const isLast = i === arr.length - 1;
@@ -930,7 +970,7 @@
                 const tabs = INDENT_CHAR.repeat(indent);
                 const innerTabs = INDENT_CHAR.repeat(indent + 1);
 
-                let html = `<span class="ObjectBrace">{</span><span class="collapse-icon" onclick="toggleCollapse(this)">−</span><span class="copy-icon" onclick="copySection(this)" title="Copy">⧉</span><span class="collapsible">`;
+                let html = `<span class="ObjectBrace">{</span><span class="collapse-icon" onclick="toggleCollapse(this)">−</span><span class="copy-icon" onclick="copySection(this)" title="Copy">⧉</span><span class="count-badge" title="${getText('countKeysTitle')}">${keys.length}</span><span class="collapsible">`;
 
                 for (let i = 0; i < keys.length; i++) {
                     const key = keys[i];
@@ -978,9 +1018,8 @@
             }
 
             function toggleCollapse(icon) {
-                const copyIcon = icon.nextElementSibling;
-                const collapsible = copyIcon.nextElementSibling;
-                const ellipsis = collapsible.nextElementSibling;
+                const collapsible = nextSiblingByClass(icon, 'collapsible');
+                const ellipsis = nextSiblingByClass(collapsible, 'ellipsis');
 
                 if (collapsible.classList.contains('hidden')) {
                     collapsible.classList.remove('hidden');
@@ -997,16 +1036,16 @@
             }
 
             function copySection(copyIcon) {
-                // Structure: openBrace → collapseIcon → copyIcon → collapsible → ellipsis → closeBrace
+                // Structure: openBrace → collapseIcon → copyIcon → countBadge → collapsible → ellipsis → closeBrace
                 const collapseIcon = copyIcon.previousElementSibling;
                 const openBrace = collapseIcon.previousElementSibling;
-                const collapsible = copyIcon.nextElementSibling;
-                const ellipsis = collapsible.nextElementSibling;
+                const collapsible = nextSiblingByClass(copyIcon, 'collapsible');
+                const ellipsis = nextSiblingByClass(collapsible, 'ellipsis');
                 const closeBrace = ellipsis.nextElementSibling;
 
                 // Clone collapsible content, remove icons and ellipsis
                 const clone = collapsible.cloneNode(true);
-                clone.querySelectorAll('.collapse-icon, .copy-icon, .ellipsis').forEach(el => el.remove());
+                clone.querySelectorAll('.collapse-icon, .copy-icon, .count-badge, .ellipsis').forEach(el => el.remove());
 
                 const raw = openBrace.textContent + clone.textContent.trimEnd() + '\n' + closeBrace.textContent;
 
@@ -1058,9 +1097,8 @@
             function expandAll() {
                 const icons = document.querySelectorAll('.collapse-icon');
                 icons.forEach(icon => {
-                    const copyIcon = icon.nextElementSibling;
-                    const collapsible = copyIcon.nextElementSibling;
-                    const ellipsis = collapsible.nextElementSibling;
+                    const collapsible = nextSiblingByClass(icon, 'collapsible');
+                    const ellipsis = nextSiblingByClass(collapsible, 'ellipsis');
                     collapsible.classList.remove('hidden');
                     ellipsis.classList.remove('show');
                     icon.classList.remove('collapsed');
@@ -1073,9 +1111,8 @@
             function collapseAll() {
                 const icons = document.querySelectorAll('.collapse-icon');
                 icons.forEach(icon => {
-                    const copyIcon = icon.nextElementSibling;
-                    const collapsible = copyIcon.nextElementSibling;
-                    const ellipsis = collapsible.nextElementSibling;
+                    const collapsible = nextSiblingByClass(icon, 'collapsible');
+                    const ellipsis = nextSiblingByClass(collapsible, 'ellipsis');
                     collapsible.classList.add('hidden');
                     ellipsis.classList.add('show');
                     icon.classList.add('collapsed');
@@ -1206,9 +1243,9 @@
                     return;
                 }
 
-                // 克隆输出内容，移除三角符号、拷贝按钮和省略号
+                // 克隆输出内容，移除三角符号、拷贝按钮、计数标签和省略号
                 const clone = output.cloneNode(true);
-                clone.querySelectorAll('.collapse-icon, .copy-icon, .ellipsis').forEach(el => el.remove());
+                clone.querySelectorAll('.collapse-icon, .copy-icon, .count-badge, .ellipsis').forEach(el => el.remove());
 
                 // 获取纯文本内容（不含HTML标签、三角符号和省略号）
                 const textContent = clone.textContent;
@@ -1266,9 +1303,9 @@
                     return;
                 }
 
-                // 克隆输出内容，移除三角符号、拷贝按钮和省略号
+                // 克隆输出内容，移除三角符号、拷贝按钮、计数标签和省略号
                 const clone = output.cloneNode(true);
-                clone.querySelectorAll('.collapse-icon, .copy-icon, .ellipsis').forEach(el => el.remove());
+                clone.querySelectorAll('.collapse-icon, .copy-icon, .count-badge, .ellipsis').forEach(el => el.remove());
 
                 // 计算字符数（排除三角符号和省略号）
                 const charCount = clone.textContent.length;
@@ -1280,6 +1317,50 @@
                 if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
                     formatJSON();
                 }
+            });
+
+            // 链接跳转与修饰键高亮（Mac 使用 CMD，其他系统使用 Ctrl）
+            const isMacPlatform = /Mac|iPhone|iPod|iPad/i.test(navigator.platform || '') || /Mac/i.test(navigator.userAgent || '');
+
+            function handleLinkClick(event, el) {
+                const modifierPressed = isMacPlatform ? event.metaKey : event.ctrlKey;
+                if (!modifierPressed) return;
+                event.preventDefault();
+                event.stopPropagation();
+                const url = el.getAttribute('data-url');
+                if (url) {
+                    window.open(url, '_blank', 'noopener');
+                }
+            }
+
+            document.addEventListener('keydown', function (e) {
+                if (isMacPlatform ? e.metaKey : e.ctrlKey) {
+                    document.body.classList.add('link-modifier-active');
+                }
+            });
+
+            document.addEventListener('keyup', function (e) {
+                if ((isMacPlatform && e.key === 'Meta') || (!isMacPlatform && e.key === 'Control')) {
+                    document.body.classList.remove('link-modifier-active');
+                }
+            });
+
+            window.addEventListener('blur', function () {
+                document.body.classList.remove('link-modifier-active');
+            });
+
+            // Input 粘贴后，若结果区为空则自动格式化
+            document.getElementById('input').addEventListener('paste', function () {
+                setTimeout(function () {
+                    updateInputInfo();
+                    const output = document.getElementById('output');
+                    if (!output.textContent.trim()) {
+                        formatJSON();
+                        if (currentJSON !== null) {
+                            showToast(getText('toastAutoFormat'), 'success');
+                        }
+                    }
+                }, 0);
             });
 
             const exampleData = {
@@ -1807,6 +1888,9 @@
                     toastCompressSuccess: '压缩成功！节省了 ',
                     toastCompressChars: ' 字符',
                     toastClearOutputSuccess: '已清空格式化结果',
+                    toastAutoFormat: '已自动格式化',
+                    countItemsTitle: '数组元素数量',
+                    countKeysTitle: '字典键数量',
                     labelChars: ' 字符'
                 },
                 en: {
@@ -1846,6 +1930,9 @@
                     toastCompressSuccess: 'Compressed! Saved ',
                     toastCompressChars: ' chars',
                     toastClearOutputSuccess: 'Formatted result cleared',
+                    toastAutoFormat: 'Auto formatted',
+                    countItemsTitle: 'Array length',
+                    countKeysTitle: 'Object keys',
                     labelChars: ' chars'
                 }
             };
