@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CMLink 英国卡使用与保号教程</title>
+<style>
+  /* 深色主题（默认变量） */
+  :root {
+    --bg: #0d1117;
+    --panel: #161b22;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --accent2: #3fb950;
+    --code-bg: #1c2128;
+    --warn-bg: #2d2212;
+    --warn-border: #9e6a03;
+    --code-orange: #ffa657;
+    --hero-grad: linear-gradient(135deg, #161b22 0%, #1c2c45 100%);
+    --accent-soft: rgba(88,166,255,.14);
+    --cmt: #8b949e;
+    --tok: #79c0ff;
+    --del: #f85149;
+  }
+  /* 浅色主题变量 */
+  .light-theme {
+    --bg: #ffffff;
+    --panel: #f6f8fa;
+    --border: #d0d7de;
+    --text: #1f2328;
+    --muted: #59636e;
+    --accent: #0969da;
+    --accent2: #1a7f37;
+    --code-bg: #f6f8fa;
+    --warn-bg: #fff8c5;
+    --warn-border: #d4a72c;
+    --code-orange: #953800;
+    --hero-grad: linear-gradient(135deg, #eaf2ff 0%, #d8e6ff 100%);
+    --accent-soft: rgba(9,105,218,.10);
+    --cmt: #57606a;
+    --tok: #0550ae;
+    --del: #cf222e;
+  }
+  /* 跟随系统：未手动指定时，系统为浅色则套用浅色 */
+  @media (prefers-color-scheme: light) {
+    :root:not(.dark-theme) {
+      --bg: #ffffff;
+      --panel: #f6f8fa;
+      --border: #d0d7de;
+      --text: #1f2328;
+      --muted: #59636e;
+      --accent: #0969da;
+      --accent2: #1a7f37;
+      --code-bg: #f6f8fa;
+      --warn-bg: #fff8c5;
+      --warn-border: #d4a72c;
+      --code-orange: #953800;
+      --hero-grad: linear-gradient(135deg, #eaf2ff 0%, #d8e6ff 100%);
+      --accent-soft: rgba(9,105,218,.10);
+      --cmt: #57606a;
+      --tok: #0550ae;
+      --del: #cf222e;
+    }
+  }
+  html { transition: background .2s ease; }
+  body { transition: background .2s ease, color .2s ease; }
+  * { box-sizing: border-box; }
+  /* 平滑滚动仅在页面加载后启用（加 .smooth-scroll 类），
+     否则刷新时浏览器的“滚动位置恢复”也会被动画化，出现从顶部滑到原位置的现象 */
+  html.smooth-scroll { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+      "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+  }
+  .layout { display: flex; max-width: 1200px; margin: 0 auto; padding-left: 240px; transition: padding-left .28s cubic-bezier(.4,0,.2,1); }
+  /* 侧边目录 */
+  /* fixed 脱离文档流，页面到边弹性回弹时侧栏与分隔线不随文档平移；
+     left 的 calc 兜底值 = 居中 1200px 布局的左缘（50vw−600px），
+     JS 会用 .layout 实际 rect 校准以消除经典滚动条下 vw 偏差 */
+  nav {
+    position: fixed;
+    top: 0;
+    left: var(--nav-left, max(0px, calc(50vw - 600px)));
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    width: 240px;
+    height: 100vh;
+    overflow: hidden;            /* 裁掉内层，实现平滑滑入/滑出 */
+    border-right: 1px solid var(--border);
+    visibility: visible;
+    transition: width .28s cubic-bezier(.4,0,.2,1),
+                border-color .28s ease,
+                visibility 0s linear 0s;
+  }
+  .nav-inner {
+    width: 240px;                /* 固定宽度，收起时内容不重排 */
+    flex: 1;
+    min-height: 0;
+    box-sizing: border-box;
+    padding: 0 16px 32px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .nav-inner.can-scroll { overscroll-behavior: contain; }
+  .nav-inner::-webkit-scrollbar { width: 6px; }
+  .nav-inner::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  .nav-inner::-webkit-scrollbar-track { background: transparent; }
+  .nav-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 240px;
+    flex-shrink: 0;
+    padding: 32px 16px 12px;
+  }
+  nav h2 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin: 0 0 0 8px;
+    padding: 0;
+    border-bottom: none;
+    white-space: nowrap;
+  }
+  /* 目录头部用来占位的锚点（标记按钮在目录内时应处的位置） */
+  #nav-btn-anchor {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+  }
+  /* 收起后：目录宽度归零（内层被裁切滑出），正文占满 */
+  body.nav-collapsed .layout { padding-left: 0; }
+  body.nav-collapsed nav {
+    width: 0;
+    border-right-color: transparent;
+    visibility: hidden;
+    pointer-events: none;
+    transition: width .28s cubic-bezier(.4,0,.2,1),
+                border-color .28s ease,
+                visibility 0s linear .28s;
+  }
+  /* 唯一的切换按钮：在“目录内位置”和“左上角”之间平移并变形 */
+  #nav-toggle-btn {
+    position: fixed;
+    z-index: 100;
+    top: var(--ntop, 28px);
+    left: var(--nleft, 16px);
+    width: 42px; height: 42px;
+    display: flex;
+    align-items: center; justify-content: center;
+    cursor: pointer;
+    transition:
+      top    .3s cubic-bezier(.4,0,.2,1),
+      left   .3s cubic-bezier(.4,0,.2,1),
+      width  .3s cubic-bezier(.4,0,.2,1),
+      height .3s cubic-bezier(.4,0,.2,1),
+      border-radius .3s ease,
+      background    .3s ease,
+      border-color  .3s ease,
+      box-shadow    .3s ease,
+      color         .3s ease;
+  }
+  /* 展开态（目录可见）：贴合目录内的锚点，扁平“幽灵”样式 */
+  body:not(.nav-collapsed) #nav-toggle-btn {
+    border-radius: 6px;
+    background: transparent;
+    border: 1px solid transparent;
+    box-shadow: none;
+    color: var(--muted);
+  }
+  body:not(.nav-collapsed) #nav-toggle-btn:hover {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  /* 收起态：移到左上角，圆形悬浮按钮样式 */
+  body.nav-collapsed #nav-toggle-btn {
+    --ntop: 16px;
+    --nleft: 16px;
+    border-radius: 50%;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    color: var(--text);
+  }
+  nav a {
+    position: relative;
+    display: block;
+    padding: 7px 10px 7px 16px;
+    margin: 1px 0;
+    color: var(--muted);
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 14px;
+  }
+  /* 左侧指示条（默认隐藏，hover/active 时显现） */
+  nav a::before {
+    content: "";
+    position: absolute;
+    left: 6px;
+    top: 50%;
+    width: 3px;
+    height: 0;
+    border-radius: 3px;
+    background: linear-gradient(var(--accent), var(--accent2));
+    transform: translateY(-50%);
+    opacity: 0;
+  }
+  nav a:hover { color: var(--text); background: var(--accent-soft); }
+  nav a.sub { padding-left: 28px; font-size: 13px; }
+  nav a.sub::before { left: 14px; }
+  /* 滚动高亮：当前主章节（醒目） */
+  nav a.active {
+    color: var(--accent);
+    background: var(--accent-soft);
+    font-weight: 600;
+  }
+  nav a.active::before {
+    height: 60%;
+    opacity: 1;
+  }
+  /* 滚动高亮：当前子小节（更淡，不抢主目录的风头） */
+  nav a.active-sub {
+    color: var(--text);
+  }
+  nav a.active-sub::before {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    opacity: .6;
+  }
+  /* 主体内容 */
+  main { flex: 1; padding: 32px 40px; min-width: 0; }
+  header.hero {
+    padding: 32px;
+    background: var(--hero-grad);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 32px;
+  }
+  header.hero h1 { margin: 0 0 8px; font-size: 28px; }
+  header.hero p { margin: 0; color: var(--muted); }
+  header.hero .updated {
+    margin-top: 14px;
+    font-size: 12px;
+    color: var(--muted);
+    opacity: .65;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  header.hero .updated::before {
+    content: "";
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  section, h3[id] { scroll-margin-top: 24px; }
+  section { margin-bottom: 48px; }
+  h2 {
+    font-size: 22px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 8px;
+    margin-top: 0;
+  }
+  h3 { font-size: 17px; color: var(--accent); margin-top: 28px; }
+  p, li { font-size: 15px; }
+  .subhead {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--text);
+    margin: 24px 0 8px;
+    padding-left: 10px;
+    border-left: 3px solid var(--accent);
+  }
+  code {
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: "SF Mono", "Fira Code", Consolas, monospace;
+    font-size: 13px;
+    color: var(--code-orange);
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    overflow-x: auto;
+    position: relative;
+  }
+  pre code { background: none; padding: 0; color: var(--text); font-size: 13px; }
+  .cmt { color: var(--cmt); }
+  .tok { color: var(--tok); }
+  main img { max-width: 100%; height: auto; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  th, td { border: 1px solid var(--border); padding: 10px 12px; text-align: left; }
+  th { background: var(--panel); }
+  .note, .warn {
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  .note { background: rgba(88,166,255,.1); border-left: 4px solid var(--accent); }
+  .warn { background: var(--warn-bg); border-left: 4px solid var(--warn-border); }
+  .step {
+    display: flex;
+    gap: 14px;
+    margin: 16px 0;
+    align-items: flex-start;
+  }
+  .step .num {
+    flex-shrink: 0;
+    width: 28px; height: 28px;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 600;
+    font-size: 14px;
+  }
+  .step .body { flex: 1; min-width: 0; }
+  /* 工作流示例：用户输入气泡 + 预期结果 */
+  .say {
+    background: var(--accent-soft);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 6px 6px 0;
+    padding: 8px 12px;
+    margin: 6px 0;
+    font-size: 14px;
+  }
+  .say::before {
+    content: "你输入";
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--bg);
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    padding: 0 5px;
+    margin-right: 8px;
+    vertical-align: 1px;
+  }
+  .exp {
+    color: var(--muted);
+    font-size: 14px;
+    margin: 6px 0 0;
+  }
+  .exp::before {
+    content: "↳ 预期：";
+    color: var(--accent2);
+    font-weight: 600;
+  }
+  .wf-card {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 4px 20px 16px;
+    margin: 18px 0;
+    background: var(--panel);
+  }
+  kbd {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-bottom-width: 2px;
+    border-radius: 5px;
+    padding: 1px 6px;
+    font-size: 12px;
+    font-family: monospace;
+  }
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    padding: 24px;
+    border-top: 1px solid var(--border);
+  }
+  a { color: var(--accent); }
+  /* 主题切换按钮 */
+  #theme-toggle {
+    position: fixed;
+    top: 16px; right: 16px;
+    z-index: 100;
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--text);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    transition: transform .15s ease, background .2s ease;
+  }
+  #theme-toggle:hover { transform: scale(1.08); }
+  @media (max-width: 768px) {
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 110;
+      background: rgba(13,17,23,.48);
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity .2s ease, visibility 0s linear .2s;
+    }
+    body.nav-open::before {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transition: opacity .2s ease, visibility 0s linear 0s;
+    }
+    body.nav-open { overflow: hidden; }
+    .layout { padding-left: 0; }
+    body.nav-collapsed nav,
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      z-index: 120;
+      width: min(78vw, 300px);
+      height: 100vh;
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      transform: translateX(-100%);
+      visibility: hidden;
+      pointer-events: none;
+      transition: transform .28s cubic-bezier(.4,0,.2,1),
+                  border-color .28s ease,
+                  visibility 0s linear .28s;
+    }
+    body.nav-open nav {
+      transform: translateX(0);
+      visibility: visible;
+      pointer-events: auto;
+      transition: transform .28s cubic-bezier(.4,0,.2,1),
+                  border-color .28s ease,
+                  visibility 0s linear 0s;
+    }
+    .nav-head,
+    .nav-inner { width: min(78vw, 300px); }
+    main { padding: 84px 20px 20px; }
+    body:not(.nav-collapsed) #nav-toggle-btn,
+    body.nav-collapsed #nav-toggle-btn {
+      --ntop: 16px;
+      --nleft: 16px;
+      display: flex;
+      border-radius: 50%;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      box-shadow: 0 2px 8px rgba(0,0,0,.25);
+      color: var(--text);
+    }
+    body:not(.nav-collapsed) #nav-toggle-btn:hover,
+    body.nav-collapsed #nav-toggle-btn:hover {
+      background: var(--panel);
+      color: var(--text);
+    }
+  }
+  @media print {
+    :root,
+    :root.light-theme,
+    :root.dark-theme {
+      --bg: #ffffff;
+      --panel: #f6f8fa;
+      --border: #d0d7de;
+      --text: #1f2328;
+      --muted: #59636e;
+      --accent: #0969da;
+      --accent2: #1a7f37;
+      --code-bg: #f6f8fa;
+      --warn-bg: #fff8c5;
+      --warn-border: #d4a72c;
+      --code-orange: #953800;
+      --hero-grad: linear-gradient(135deg, #eaf2ff 0%, #d8e6ff 100%);
+      --accent-soft: rgba(9,105,218,.10);
+      --cmt: #57606a;
+      --tok: #0550ae;
+      --del: #cf222e;
+    }
+    nav,
+    #theme-toggle,
+    #nav-toggle-btn { display: none !important; }
+    body::before { display: none !important; }
+    .layout {
+      display: block;
+      max-width: none;
+      margin: 0;
+      padding: 0;
+    }
+    main {
+      padding: 0;
+      width: 100%;
+    }
+    pre {
+      white-space: pre-wrap;
+      overflow: visible;
+    }
+    .step .num { background: none; color: #000; border: 1px solid #000; }
+  }
+</style>
+</head>
+<body>
+<button id="theme-toggle" aria-label="切换主题模式（自动/浅色/深色）" title="主题：跟随系统（点击切换）">🌓</button>
+<button id="nav-toggle-btn" aria-label="收起/展开目录" aria-expanded="true" aria-controls="site-nav" title="收起/展开目录">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="3" y="3" width="18" height="18" rx="2"/>
+    <line x1="9" y1="3" x2="9" y2="21"/>
+  </svg>
+</button>
+<div class="layout">
+  <nav id="site-nav">
+   <div class="nav-head">
+     <h2>目录</h2>
+     <span id="nav-btn-anchor" aria-hidden="true"></span>
+   </div>
+   <div class="nav-inner">
+    <a href="#intro">一、认识 CMLink 与英国号码</a>
+    <a href="#intro-zero" class="sub">号码开头的 0</a>
+    <a href="#activate">二、激活与首次登录</a>
+    <a href="#activate-sim" class="sub">1. 插卡等信号</a>
+    <a href="#activate-login" class="sub">2. 登录官网</a>
+    <a href="#activate-email" class="sub">3. 绑定邮箱与密码</a>
+    <a href="#account">三、套餐查询与充值</a>
+    <a href="#account-plan" class="sub">1. 查看套餐与话费</a>
+    <a href="#account-topup" class="sub">2. 话费充值</a>
+    <a href="#roaming">四、内地漫游套餐</a>
+    <a href="#keepalive">五、保号教程</a>
+    <a href="#keepalive-rules" class="sub">1. 有效期规则</a>
+    <a href="#keepalive-payg" class="sub">2. 什么是 PAYG</a>
+    <a href="#keepalive-email" class="sub">3. 邮件改套餐</a>
+   </div>
+  </nav>
+
+  <main>
+    <header class="hero">
+      <h1>CMLink 英国卡使用与保号教程</h1>
+      <p>从插卡激活、充值到长期保号 —— 中国移动国际 CMLink 英国 SIM 卡上手指南</p>
+      <p class="updated">最后更新：<time id="last-updated" datetime="2026-07-12T12:00:00Z">2026-07-12</time></p>
+    </header>
+
+    <section id="intro">
+      <h2>一、认识 CMLink 与英国号码</h2>
+      <p><strong>CMLink</strong> 是中国移动国际（China Mobile International, CMI）面向海外用户的运营品牌。这张 CMLink 英国 SIM 卡配的是一个<strong>英国本地号码</strong>，号码的本地格式和国际格式看起来会有一点不同。</p>
+
+      <h3 id="intro-zero">号码开头的 0 是怎么回事</h3>
+      <p>英国电话号码采用本地写法时会以 <code>0</code> 开头，例如 <code>07xxx xxxxxx</code>。这里的 <code>0</code> 是英国国内拨号前缀（trunk prefix），并不属于号码本身；改写成国际格式时，要去掉开头的 <code>0</code>，写成 <code>+44 7xxx xxxxxx</code>。</p>
+      <table>
+        <tr><th>号码格式</th><th>示例</th><th>使用场景</th></tr>
+        <tr>
+          <td>英国本地格式</td>
+          <td><code>07xxx xxxxxx</code></td>
+          <td>在英国本地拨打或输入号码时使用</td>
+        </tr>
+        <tr>
+          <td>国际格式</td>
+          <td><code>+44 7xxx xxxxxx</code></td>
+          <td>在国内外网站或 App 填写号码、接收验证码时，先选国家区号 <code>+44</code>，再填写<strong>去掉开头 0</strong> 的号码</td>
+        </tr>
+      </table>
+      <div class="note">
+        💡 两种写法指向的是<strong>同一个号码</strong>。以后看到带 <code>0</code> 和不带 <code>0</code> 的两种写法，不用慌，只是本地格式和国际格式不同。
+      </div>
+    </section>
+
+    <section id="activate">
+      <h2>二、激活与首次登录</h2>
+
+      <h3 id="activate-sim">1. 插卡等信号</h3>
+      <p>把 SIM 卡插入手机，等待手机搜到信号即可，<strong>无需额外进行激活操作</strong>。</p>
+      <div class="warn">
+        ⚠️ 插卡前先把 SIM 卡板上的 <strong>ICCID（SIM 卡号码）拍照留档</strong>，卡板也别丢。后面修改套餐或联系客服时会用到这串号码。
+      </div>
+
+      <h3 id="activate-login">2. 登录官网</h3>
+      <p>浏览器打开 <a href="https://www.cmlink.com/uk/zh/login/" target="_blank">CMLink 英国官网登录页</a>，输入手机号，再获取短信验证码登录。</p>
+
+      <h3 id="activate-email">3. 绑定邮箱并设置密码</h3>
+      <p>首次登录时，需要绑定邮箱并设置密码，按页面提示完成即可。</p>
+      <div class="warn">
+        ⚠️ 这个邮箱之后联系客服修改套餐、办理保号时还要用来发信。务必绑定<strong>常用邮箱</strong>，并记牢邮箱地址和密码。
+      </div>
+    </section>
+
+    <section id="account">
+      <h2>三、套餐查询与话费充值</h2>
+
+      <h3 id="account-plan">1. 查看套餐与话费</h3>
+      <p>登录后可以查看当前号码的套餐、话费余额等信息。当前默认是 <strong>1GB 体验套餐</strong>。</p>
+      <div class="warn">
+        ⚠️ 体验套餐里的流量和通话<strong>仅限英国本地使用</strong>，并不包含可在中国内地使用的漫游流量。人在国内插上卡，也用不了这 1GB 流量。
+      </div>
+      <p>开卡时支付的 <strong>1 英镑</strong>会作为话费预存，在号码激活后发放到账户。</p>
+      <div class="note">
+        💡 如果激活后发现账户里没有这 1 英镑话费，建议联系客服说明情况把话费补上——可以在第五章发保号邮件时顺带提一句，一并处理。
+      </div>
+
+      <h3 id="account-topup">2. 话费充值</h3>
+      <p>CMLink 支持使用微信或支付宝付款，<strong>最低充值 6 英镑</strong>。可以从下面两个渠道操作：</p>
+      <table>
+        <tr><th>充值渠道</th><th>入口</th></tr>
+        <tr>
+          <td>官网充值</td>
+          <td><a href="https://www.cmlink.com/uk/zh/topup/" target="_blank">https://www.cmlink.com/uk/zh/topup/</a></td>
+        </tr>
+        <tr>
+          <td>微信公众号充值</td>
+          <td>在微信中搜索公众号「<strong>小移在英国</strong>」</td>
+        </tr>
+      </table>
+      <div class="note">
+        💡 如果只是为了保号，充值本身也算一次「消费或充值」动作，具体有效期规则见第五章。
+      </div>
+    </section>
+
+    <section id="roaming">
+      <h2>四、想在中国内地用流量：漫游套餐</h2>
+      <p>如果想在中国内地使用流量，并让出口 IP 显示为英国，可以按需要订购对应套餐：</p>
+      <table>
+        <tr><th>套餐类型</th><th>官方入口</th></tr>
+        <tr>
+          <td>中英月套餐</td>
+          <td><a href="https://www.cmlink.com/uk/zh/planlist/?type=5" target="_blank">查看中英月套餐</a></td>
+        </tr>
+        <tr>
+          <td>回国套餐</td>
+          <td><a href="https://www.cmlink.com/uk/zh/planlist/?type=3" target="_blank">查看回国套餐</a></td>
+        </tr>
+      </table>
+      <div class="note">
+        💡 如果只想保留号码接收验证码、不需要流量，直接看下一章的保号教程即可。
+      </div>
+    </section>
+
+    <section id="keepalive">
+      <h2>五、保号教程</h2>
+      <p>如果不打算使用流量，只想长期保留这个英国号码接收验证码，核心就是：<strong>别让号码因为长期不用而被回收</strong>。</p>
+
+      <h3 id="keepalive-rules">1. 有效期规则</h3>
+      <p>CMLink 官网的 <a href="https://www.cmlink.com/uk/zh/faqs/?type=Contactus&amp;value=14" target="_blank">SIM 卡有效期说明</a>中，「CMLink SIM卡是否有有效期？」一问的官方回答原文如下（截至 2026-07-12），实际规则以官方最新说明为准。</p>
+      <pre><code>CMLink SIM卡是否有有效期？
+
+未激活的CMLink英国卡有一年的有效期。电话卡需在购买后一年内激活，
+逾期失效。激活前套餐不会生效或产生任何费用。
+已激活的CMLink英国卡的有效期定义规则如下:
+• 月套餐或年包套餐到期后，连续90天未订购新套餐使用，号码会被自动销户;
+• 旅游套餐/回国套餐/一次性套餐/保号套餐/体验套餐到期后，连续30天
+  未订购新套餐使用，号码会被自动销户;
+*请注意，SIM卡在销户后，号码及余额将无法恢复。 *</code></pre>
+      <p>注意，官方条文是按「套餐到期后有没有订购新套餐」来界定的——体验套餐、回国套餐等到期后 30 天，月套餐到期后 90 天，未订购新套餐就会自动销户；条文并<strong>没有写明</strong>改成 PAYG（不订套餐）之后的有效期规则。这正是下面社区经验想回答的问题。</p>
+      <p>据 <a href="https://x.com/Hp2ai/status/2069577292834279727" target="_blank">X 博主提供的信息</a>，改成 Pay As You Go 套餐后，每 180 天内有任意消费或充值即可保号；也有说法认为周期是每 90 天；还有一种说法是<strong>订购过回国套餐的号码会变成 90 天，从未订购过的仍是 180 天</strong>。这些说法互相出入、均未经官方确认，仅供参考。</p>
+      <p>目前已有真实案例佐证「90 天」这条线——有用户收到了官方发来的「连续 90 天未使用、即将自动停用」提醒短信，原文如下。</p>
+      <pre><code>[Service Alert]
+Please note xxxx has not been used for 90 consecutive days and is
+scheduled for automatic deactivation soon. Once deactivated, your
+number cannot be retrieved and any remaining balance will be lost.
+To keep your number active, please top up and subscribe a suitable
+plan as soon as possible. You can top up via the following link:
+cmlink.com/uk/topup.
+CMLink</code></pre>
+      <div class="warn">
+        ⚠️ 官方条文和提醒短信都写明：号码一旦销户将<strong>无法找回</strong>，余额也会<strong>清零</strong>。既然各种说法出入较大，建议不赌宽松的那种——统一按最严的 <strong>90 天</strong>为周期，确保每 90 天内至少有一次消费或充值（让余额发生一次变动）。
+      </div>
+      <div class="note">
+        💡 可以设置一个<strong>每 88 天重复</strong>的提醒事项，到期给自己的这个号码发一条短信——发短信既算「使用」，又会扣费让余额变动，一举两得；88 天比 90 天提前 2 天，留出缓冲不怕踩线。
+      </div>
+
+      <h3 id="keepalive-payg">2. 什么是 Pay As You Go（PAYG）</h3>
+      <p>Pay Go 指的是 <strong>Pay As You Go</strong>，简称 <strong>PAYG</strong>，中文可以理解为「即用即付」。国外大部分运营商都有这种模式：不像国内运营商那样必须每月交套餐费，用户可以随时按需订购或退订套餐，也可以完全不订套餐、用多少付多少。</p>
+      <p>运营商通常会给出一套保号规则，只要按规则保持消费或充值记录，就可以避免号码被注销。</p>
+
+      <h3 id="keepalive-email">3. 发邮件改成 PAYG 套餐</h3>
+      <p>使用之前绑定的邮箱，给 CMLink 官方客服邮箱 <a href="mailto:csuk@cmlink.com">csuk@cmlink.com</a> 发邮件，说明自己近期不打算回英国，希望客服协助把号码改成 Pay As You Go（PAYG）套餐。</p>
+      <p>邮件中必须附上以下两项信息：</p>
+      <ul>
+        <li><strong>手机号码</strong></li>
+        <li><strong>ICCID</strong>：就是 SIM 卡板上的那串 SIM 卡号码，也就是前面提醒你拍照留档的信息</li>
+      </ul>
+      <div class="note">
+        💡 可以让 AI 帮你写这封邮件。发送前记得把模板里的手机号、ICCID 和姓名占位符替换成自己的信息。
+      </div>
+      <div class="warn">
+        ⚠️ <strong>待确认</strong>：据说需要先按最低充值金额充值 <strong>6 英镑</strong>，才能转成 PAYG 套餐。此说法尚未得到官方确认（笔者已去信客服询问，待回复后会更新本节）。稳妥起见，可以在发邮件前先完成一次 6 英镑充值。
+      </div>
+
+      <p class="subhead">英文邮件模板</p>
+      <pre><code>Subject: Request to switch to Pay As You Go plan
+
+Dear CMLink Customer Service,
+
+I will not be returning to the UK in the near future and would like to
+switch my number to the Pay As You Go (PAYG) plan to keep it active.
+
+Phone number: [你的手机号，如 07xxx xxxxxx]
+ICCID: [SIM 卡板上的号码]
+
+Please confirm once the change is done. Thank you!
+
+Best regards,
+[你的姓名]</code></pre>
+    </section>
+
+    <footer>
+      CMLink 英国卡使用与保号教程 · 仅供学习参考 · 套餐与规则以 CMLink 官方最新说明为准
+    </footer>
+  </main>
+</div>
+
+<script>
+function storeGet(k) {
+  try { return localStorage.getItem(k); } catch (e) { return null; }
+}
+function storeSet(k, v) {
+  try { localStorage.setItem(k, v); } catch (e) {}
+}
+function storeRemove(k) {
+  try { localStorage.removeItem(k); } catch (e) {}
+}
+
+(function () {
+  var root = document.documentElement;        // <html>
+  var btn = document.getElementById('theme-toggle');
+  var KEY = 'aidoc-theme';
+  var media = window.matchMedia ? window.matchMedia('(prefers-color-scheme: light)') : null;
+
+  // 应用主题：'dark' / 'light' / null(跟随系统)
+  function apply(mode) {
+    root.classList.remove('dark-theme', 'light-theme');
+    if (mode === 'dark')  root.classList.add('dark-theme');
+    if (mode === 'light') root.classList.add('light-theme');
+    if (mode === 'light') {
+      btn.textContent = '☀️';
+      btn.title = '主题：浅色（点击切换）';
+    } else if (mode === 'dark') {
+      btn.textContent = '🌙';
+      btn.title = '主题：深色（点击切换）';
+    } else {
+      btn.textContent = '🌓';
+      btn.title = '主题：跟随系统（点击切换）';
+    }
+  }
+
+  // 初始化：优先读取用户手动选择，否则跟随系统
+  apply(storeGet(KEY));
+
+  // 点击按 自动 -> 浅色 -> 深色 -> 自动 三态循环
+  btn.addEventListener('click', function () {
+    var order = [null, 'light', 'dark'];
+    var next = order[(order.indexOf(storeGet(KEY)) + 1) % order.length];
+    apply(next);
+    if (next) storeSet(KEY, next);
+    else storeRemove(KEY);
+  });
+
+  // 未手动选择时，跟随系统实时变化
+  function onSystemThemeChange() {
+    if (!storeGet(KEY)) apply(null);
+  }
+  if (media) {
+    if (media.addEventListener) media.addEventListener('change', onSystemThemeChange);
+    else if (media.addListener) media.addListener(onSystemThemeChange);
+  }
+})();
+
+// ---- 平滑滚动：等加载与滚动位置恢复完成后再启用 ----
+(function () {
+  function enable() {
+    // 再等一帧，确保浏览器的滚动位置恢复已完成，避免被动画化
+    requestAnimationFrame(function () {
+      document.documentElement.classList.add('smooth-scroll');
+    });
+  }
+  if (document.readyState === 'complete') enable();
+  else window.addEventListener('load', enable);
+})();
+
+// ---- 最后更新日期：按系统时区与地区格式显示 ----
+(function () {
+  var el = document.getElementById('last-updated');
+  if (!el) return;
+  var d = new Date(el.getAttribute('datetime'));
+  if (isNaN(d)) return;
+  // 数字短格式 YYYY-MM-DD，按系统本地时区取年月日
+  var p = function (n) { return String(n).padStart(2, '0'); };
+  el.textContent = d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+  el.title = d.toLocaleString();   // 悬停显示完整本地日期时间
+})();
+
+// ---- 目录收起 / 展开（单按钮在两个位置间平移变形）----
+(function () {
+  var KEY = 'aidoc-nav';
+  var btn = document.getElementById('nav-toggle-btn');
+  var nav = document.getElementById('site-nav');
+  var anchor = document.getElementById('nav-btn-anchor');
+  var rootEl = document.documentElement;
+  var layoutEl = document.querySelector('.layout');
+  var mobileMedia = window.matchMedia ? window.matchMedia('(max-width: 768px)') : null;
+  var wasMobile = isMobile();
+
+  function isMobile() {
+    return mobileMedia ? mobileMedia.matches : window.innerWidth <= 768;
+  }
+
+  function syncNavX() {
+    if (isMobile() || !layoutEl) return;
+    rootEl.style.setProperty('--nav-left', layoutEl.getBoundingClientRect().left + 'px');
+  }
+
+  function setExpanded(open) {
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+
+  function syncExpanded() {
+    setExpanded(isMobile() ? document.body.classList.contains('nav-open') : !document.body.classList.contains('nav-collapsed'));
+  }
+
+  function setDrawerOpen(open) {
+    document.body.classList.toggle('nav-open', open);
+    syncExpanded();
+  }
+
+  function syncNavScrollable() {
+    var inner = document.querySelector('.nav-inner');
+    if (inner) inner.classList.toggle('can-scroll', inner.scrollHeight > inner.clientHeight);
+  }
+
+  // 把“展开态”按钮该停靠的坐标（= 目录内锚点中心）写入 CSS 变量，
+  // 这样无论窗口多宽、布局如何居中，按钮都能精确贴合目录里的位置。
+  function syncAnchor() {
+    if (isMobile()) return;
+    var r = anchor.getBoundingClientRect();
+    // 锚点未渲染时（如移动端 nav: display:none，rect 全为 0）不更新，
+    // 否则会写入 -21px 等错误坐标，放大回桌面端时按钮就会“飞”过去。
+    if (r.width === 0 && r.height === 0) return;
+    rootEl.style.setProperty('--nleft', (r.left + r.width / 2 - 21) + 'px');
+    rootEl.style.setProperty('--ntop',  (r.top + r.height / 2 - 21) + 'px');
+  }
+
+  // 跟随式更新（缩放 / 滚动）：期间关闭按钮过渡，让它即时贴住锚点而不是“飞”；
+  // 停止一小段时间后再恢复过渡，保证收起/展开“点击”时仍有平移变形动画。
+  var animTimer;
+  function syncFollow() {
+    btn.style.transition = 'none';
+    syncAnchor();
+    clearTimeout(animTimer);
+    animTimer = setTimeout(function () { btn.style.transition = ''; }, 200);
+  }
+
+  function setCollapsed(c) {
+    document.body.classList.toggle('nav-collapsed', c);
+    storeSet(KEY, c ? '1' : '0');
+    syncExpanded();
+  }
+  // 恢复上次状态
+  if (storeGet(KEY) === '1') document.body.classList.add('nav-collapsed');
+  syncExpanded();
+  syncNavScrollable();
+
+  // 首次定位时临时禁用过渡，避免刷新瞬间从默认位置“滑”一下
+  btn.style.transition = 'none';
+  syncNavX();
+  syncAnchor();
+  void btn.offsetWidth;          // 强制回流，让定位立即落定
+  requestAnimationFrame(function () { btn.style.transition = ''; });
+
+  window.addEventListener('resize', function () {
+    var nowMobile = isMobile();
+    if (nowMobile !== wasMobile) {
+      document.body.classList.remove('nav-open');
+      wasMobile = nowMobile;
+    }
+    syncExpanded();
+    syncNavScrollable();
+    syncNavX();
+    syncFollow();
+  });
+  window.addEventListener('scroll', syncFollow, { passive: true });
+
+  btn.addEventListener('click', function () {
+    // 确保点击切换一定带动画（即便此刻正处于缩放的“无过渡”窗口内）
+    clearTimeout(animTimer);
+    btn.style.transition = '';
+    if (isMobile()) {
+      setDrawerOpen(!document.body.classList.contains('nav-open'));
+      return;
+    }
+    setCollapsed(!document.body.classList.contains('nav-collapsed'));
+  });
+
+  nav.addEventListener('click', function (e) {
+    var t = e.target;
+    while (t && t !== nav) {
+      if (t.tagName === 'A') {
+        if (isMobile()) setDrawerOpen(false);
+        return;
+      }
+      t = t.parentNode;
+    }
+  });
+
+  document.addEventListener('click', function (e) {
+    if (!isMobile() || !document.body.classList.contains('nav-open')) return;
+    if (nav.contains(e.target) || btn.contains(e.target)) return;
+    setDrawerOpen(false);
+  });
+})();
+
+// ---- 滚动高亮目录（scroll-spy）----
+(function () {
+  var links = Array.prototype.slice.call(document.querySelectorAll('nav a[href^="#"]'));
+  var navBox = document.querySelector('.nav-inner');
+  // 建立 id -> 链接 映射，收集监听目标，并记录每个子项所属的主目录链接
+  var map = {};
+  var targets = [];
+  var parentOf = {};      // 子链接 -> 其上方最近的主目录链接
+  var lastMain = null;
+  links.forEach(function (a) {
+    var id = decodeURIComponent(a.getAttribute('href').slice(1));
+    var el = document.getElementById(id);
+    if (el) { map[id] = a; targets.push(el); }
+    if (a.classList.contains('sub')) {
+      if (lastMain) parentOf[id] = lastMain;
+    } else {
+      lastMain = a;        // 记住当前主目录，后续子项归属于它
+    }
+  });
+  if (!targets.length) return;
+
+  var current = null;   // 当前命中的 id，避免重复刷新 DOM
+  function glide(el, top) {
+    if (el.scrollTo && 'scrollBehavior' in document.documentElement.style) el.scrollTo({ top: top, behavior: 'smooth' });
+    else el.scrollTop = top;
+  }
+
+  function highlight() {
+    // 触发线设在视口约 28% 高度处；命中“已越过触发线的最后一个标题”
+    var line = window.innerHeight * 0.28;
+    var best = targets[0].id;
+    var atBottom = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2;
+    var atTop = window.scrollY <= 2;
+    if (atBottom) {
+      best = targets[targets.length - 1].id;
+    } else {
+      for (var i = 0; i < targets.length; i++) {
+        if (targets[i].getBoundingClientRect().top <= line) {
+          best = targets[i].id;   // 文档顺序靠后者覆盖，得到最近越过的标题
+        } else {
+          break;                  // 后面的还没滚到，无需再看
+        }
+      }
+    }
+    // 正文回到最顶部：目录也平滑回到自身顶部（底部方向保持不跟随）
+    if (atTop && navBox && navBox.scrollTop > 0) glide(navBox, 0);
+    if (best === current) return;
+    current = best;
+
+    links.forEach(function (a) { a.classList.remove('active', 'active-sub'); });
+    var link = map[best];
+    if (!link) return;
+    if (link.classList.contains('sub')) {
+      // 当前在子小节：子项用淡标识，父级主目录用醒目标识
+      link.classList.add('active-sub');
+      if (parentOf[best]) parentOf[best].classList.add('active');
+    } else {
+      // 当前在主章节标题处
+      link.classList.add('active');
+    }
+    // 目录较长时，让高亮项在目录内纵向可见。
+    // 只调整 .nav-inner 的纵向 scrollTop，不用 scrollIntoView——
+    // 后者会顺带横向滚动“收起态”的目录（width:0; overflow:hidden），
+    // 留下残留的 scrollLeft，导致展开时内容横向偏移。
+    // 使用 smooth 滚动最小距离，避免矮窗口下目录高亮瞬间跳变。
+    // 页面到达两端时只更新高亮，不再把目录滚向其两端；高亮项此时可能被裁掉一角，属有意取舍。
+    var box = navBox;
+    if (box && !atTop && !atBottom) {
+      var lr = link.getBoundingClientRect();
+      var br = box.getBoundingClientRect();
+      var target = null;
+      if (lr.top < br.top) target = box.scrollTop - (br.top - lr.top) - 8;
+      else if (lr.bottom > br.bottom) target = box.scrollTop + (lr.bottom - br.bottom) + 8;
+      if (target !== null) {
+        glide(box, target);
+      }
+    }
+  }
+
+  // 用 rAF 节流滚动事件
+  var ticking = false;
+  function onScroll() {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(function () { highlight(); ticking = false; });
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll);
+  highlight();   // 初始执行一次
+})();
+</script>
+</body>
+</html>
