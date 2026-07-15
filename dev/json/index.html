@@ -896,6 +896,26 @@
                     .replace(/"/g, '&quot;');
             }
 
+            function parseJSONInput(input) {
+                const parsed = JSON.parse(input);
+
+                if (typeof parsed !== 'string') {
+                    return parsed;
+                }
+
+                // 仅当内容像对象/数组时才二次解析：否则 "123"、"true" 这类
+                // 标量字符串也能解析成功，会被静默改写成数字/布尔
+                if (!/^\s*[{[]/.test(parsed)) {
+                    return parsed;
+                }
+
+                try {
+                    return JSON.parse(parsed);
+                } catch (_) {
+                    return parsed;
+                }
+            }
+
             // 在兄弟节点中按类名向后查找，避免插入 count-badge 后破坏遍历
             function nextSiblingByClass(el, cls) {
                 let n = el.nextElementSibling;
@@ -994,7 +1014,7 @@
 
                 try {
                     getIndent();
-                    currentJSON = JSON.parse(input);
+                    currentJSON = parseJSONInput(input);
                     const html = `<pre class="CodeContainer">${processValue(currentJSON, 0, false)}</pre>`;
                     output.innerHTML = html;
                     updateToggleButton();
@@ -1157,7 +1177,7 @@
                 }
 
                 try {
-                    const parsed = JSON.parse(input);
+                    const parsed = parseJSONInput(input);
                     const compressed = JSON.stringify(parsed);
                     output.innerHTML = `<pre class="CodeContainer">${escapeHtml(compressed)}</pre>`;
                     showToast(getText('toastCompressSuccess') + (input.length - compressed.length) + getText('toastCompressChars'), 'success');
@@ -1180,7 +1200,7 @@
                 }
 
                 try {
-                    JSON.parse(input);
+                    parseJSONInput(input);
                     showToast(getText('toastJsonValid'), 'success');
                 } catch (e) {
                     showToast(getText('toastJsonError') + e.message, 'error');
