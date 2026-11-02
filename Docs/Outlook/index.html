@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Outlook 邮箱安全设置教程</title>
+<style>
+  /* 深色主题（默认变量） */
+  :root {
+    --bg: #0d1117;
+    --panel: #161b22;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --accent2: #3fb950;
+    --code-bg: #1c2128;
+    --warn-bg: #2d2212;
+    --warn-border: #9e6a03;
+    --code-orange: #ffa657;
+    --hero-grad: linear-gradient(135deg, #161b22 0%, #1c2c45 100%);
+    --accent-soft: rgba(88,166,255,.14);
+    --cmt: #8b949e;
+    --tok: #79c0ff;
+    --del: #f85149;
+  }
+  /* 浅色主题变量 */
+  .light-theme {
+    --bg: #ffffff;
+    --panel: #f6f8fa;
+    --border: #d0d7de;
+    --text: #1f2328;
+    --muted: #59636e;
+    --accent: #0969da;
+    --accent2: #1a7f37;
+    --code-bg: #f6f8fa;
+    --warn-bg: #fff8c5;
+    --warn-border: #d4a72c;
+    --code-orange: #953800;
+    --hero-grad: linear-gradient(135deg, #eaf2ff 0%, #d8e6ff 100%);
+    --accent-soft: rgba(9,105,218,.10);
+    --cmt: #57606a;
+    --tok: #0550ae;
+    --del: #cf222e;
+  }
+  /* 跟随系统：未手动指定时，系统为浅色则套用浅色 */
+  @media (prefers-color-scheme: light) {
+    :root:not(.dark-theme) {
+      --bg: #ffffff;
+      --panel: #f6f8fa;
+      --border: #d0d7de;
+      --text: #1f2328;
+      --muted: #59636e;
+      --accent: #0969da;
+      --accent2: #1a7f37;
+      --code-bg: #f6f8fa;
+      --warn-bg: #fff8c5;
+      --warn-border: #d4a72c;
+      --code-orange: #953800;
+      --hero-grad: linear-gradient(135deg, #eaf2ff 0%, #d8e6ff 100%);
+      --accent-soft: rgba(9,105,218,.10);
+      --cmt: #57606a;
+      --tok: #0550ae;
+      --del: #cf222e;
+    }
+  }
+  html { transition: background .2s ease; }
+  body { transition: background .2s ease, color .2s ease; }
+  * { box-sizing: border-box; }
+  /* 平滑滚动仅在页面加载后启用（加 .smooth-scroll 类），
+     否则刷新时浏览器的“滚动位置恢复”也会被动画化，出现从顶部滑到原位置的现象 */
+  html.smooth-scroll { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+      "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+  }
+  .layout { display: flex; max-width: 1200px; margin: 0 auto; padding-left: 240px; transition: padding-left .28s cubic-bezier(.4,0,.2,1); }
+  /* 侧边目录 */
+  /* fixed 脱离文档流，页面到边弹性回弹时侧栏与分隔线不随文档平移；
+     left 的 calc 兜底值 = 居中 1200px 布局的左缘（50vw−600px），
+     JS 会用 .layout 实际 rect 校准以消除经典滚动条下 vw 偏差 */
+  nav {
+    position: fixed;
+    top: 0;
+    left: var(--nav-left, max(0px, calc(50vw - 600px)));
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    width: 240px;
+    height: 100vh;
+    overflow: hidden;            /* 裁掉内层，实现平滑滑入/滑出 */
+    border-right: 1px solid var(--border);
+    visibility: visible;
+    transition: width .28s cubic-bezier(.4,0,.2,1),
+                border-color .28s ease,
+                visibility 0s linear 0s;
+  }
+  .nav-inner {
+    width: 240px;                /* 固定宽度，收起时内容不重排 */
+    flex: 1;
+    min-height: 0;
+    box-sizing: border-box;
+    padding: 0 16px 32px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .nav-inner.can-scroll { overscroll-behavior: contain; }
+  .nav-inner::-webkit-scrollbar { width: 6px; }
+  .nav-inner::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  .nav-inner::-webkit-scrollbar-track { background: transparent; }
+  .nav-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 240px;
+    flex-shrink: 0;
+    padding: 32px 16px 12px;
+  }
+  nav h2 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin: 0 0 0 8px;
+    padding: 0;
+    border-bottom: none;
+    white-space: nowrap;
+  }
+  /* 目录头部用来占位的锚点（标记按钮在目录内时应处的位置） */
+  #nav-btn-anchor {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+  }
+  /* 收起后：目录宽度归零（内层被裁切滑出），正文占满 */
+  body.nav-collapsed .layout { padding-left: 0; }
+  body.nav-collapsed nav {
+    width: 0;
+    border-right-color: transparent;
+    visibility: hidden;
+    pointer-events: none;
+    transition: width .28s cubic-bezier(.4,0,.2,1),
+                border-color .28s ease,
+                visibility 0s linear .28s;
+  }
+  /* 唯一的切换按钮：在“目录内位置”和“左上角”之间平移并变形 */
+  #nav-toggle-btn {
+    position: fixed;
+    z-index: 100;
+    top: var(--ntop, 28px);
+    left: var(--nleft, 16px);
+    width: 42px; height: 42px;
+    display: flex;
+    align-items: center; justify-content: center;
+    cursor: pointer;
+    transition:
+      top    .3s cubic-bezier(.4,0,.2,1),
+      left   .3s cubic-bezier(.4,0,.2,1),
+      width  .3s cubic-bezier(.4,0,.2,1),
+      height .3s cubic-bezier(.4,0,.2,1),
+      border-radius .3s ease,
+      background    .3s ease,
+      border-color  .3s ease,
+      box-shadow    .3s ease,
+      color         .3s ease;
+  }
+  /* 展开态（目录可见）：贴合目录内的锚点，扁平“幽灵”样式 */
+  body:not(.nav-collapsed) #nav-toggle-btn {
+    border-radius: 6px;
+    background: transparent;
+    border: 1px solid transparent;
+    box-shadow: none;
+    color: var(--muted);
+  }
+  body:not(.nav-collapsed) #nav-toggle-btn:hover {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  /* 收起态：移到左上角，圆形悬浮按钮样式 */
+  body.nav-collapsed #nav-toggle-btn {
+    --ntop: 16px;
+    --nleft: 16px;
+    border-radius: 50%;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    color: var(--text);
+  }
+  nav a {
+    position: relative;
+    display: block;
+    padding: 7px 10px 7px 16px;
+    margin: 1px 0;
+    color: var(--muted);
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 14px;
+  }
+  /* 左侧指示条（默认隐藏，hover/active 时显现） */
+  nav a::before {
+    content: "";
+    position: absolute;
+    left: 6px;
+    top: 50%;
+    width: 3px;
+    height: 0;
+    border-radius: 3px;
+    background: linear-gradient(var(--accent), var(--accent2));
+    transform: translateY(-50%);
+    opacity: 0;
+  }
+  nav a:hover { color: var(--text); background: var(--accent-soft); }
+  nav a.sub { padding-left: 28px; font-size: 13px; }
+  nav a.sub::before { left: 14px; }
+  /* 滚动高亮：当前主章节（醒目） */
+  nav a.active {
+    color: var(--accent);
+    background: var(--accent-soft);
+    font-weight: 600;
+  }
+  nav a.active::before {
+    height: 60%;
+    opacity: 1;
+  }
+  /* 滚动高亮：当前子小节（更淡，不抢主目录的风头） */
+  nav a.active-sub {
+    color: var(--text);
+  }
+  nav a.active-sub::before {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    opacity: .6;
+  }
+  /* 主体内容 */
+  main { flex: 1; padding: 32px 40px; min-width: 0; }
+  header.hero {
+    padding: 32px;
+    background: var(--hero-grad);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 32px;
+  }
+  header.hero h1 { margin: 0 0 8px; font-size: 28px; }
+  header.hero p { margin: 0; color: var(--muted); }
+  header.hero .updated {
+    margin-top: 14px;
+    font-size: 12px;
+    color: var(--muted);
+    opacity: .65;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  header.hero .updated::before {
+    content: "";
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  section, h3[id] { scroll-margin-top: 24px; }
+  section { margin-bottom: 48px; }
+  h2 {
+    font-size: 22px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 8px;
+    margin-top: 0;
+  }
+  h3 { font-size: 17px; color: var(--accent); margin-top: 28px; }
+  p, li { font-size: 15px; }
+  .subhead {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--text);
+    margin: 24px 0 8px;
+    padding-left: 10px;
+    border-left: 3px solid var(--accent);
+  }
+  code {
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: "SF Mono", "Fira Code", Consolas, monospace;
+    font-size: 13px;
+    color: var(--code-orange);
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    overflow-x: auto;
+    position: relative;
+  }
+  pre code { background: none; padding: 0; color: var(--text); font-size: 13px; }
+  .cmt { color: var(--cmt); }
+  .tok { color: var(--tok); }
+  main img { max-width: 100%; height: auto; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  th, td { border: 1px solid var(--border); padding: 10px 12px; text-align: left; }
+  th { background: var(--panel); }
+  .note, .warn {
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  .note { background: rgba(88,166,255,.1); border-left: 4px solid var(--accent); }
+  .warn { background: var(--warn-bg); border-left: 4px solid var(--warn-border); }
+  .step {
+    display: flex;
+    gap: 14px;
+    margin: 16px 0;
+    align-items: flex-start;
+  }
+  .step .num {
+    flex-shrink: 0;
+    width: 28px; height: 28px;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 600;
+    font-size: 14px;
+  }
+  .step .body { flex: 1; min-width: 0; }
+  /* 工作流示例：用户输入气泡 + 预期结果 */
+  .say {
+    background: var(--accent-soft);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 6px 6px 0;
+    padding: 8px 12px;
+    margin: 6px 0;
+    font-size: 14px;
+  }
+  .say::before {
+    content: "你输入";
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--bg);
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    padding: 0 5px;
+    margin-right: 8px;
+    vertical-align: 1px;
+  }
+  .exp {
+    color: var(--muted);
+    font-size: 14px;
+    margin: 6px 0 0;
+  }
+  .exp::before {
+    content: "↳ 预期：";
+    color: var(--accent2);
+    font-weight: 600;
+  }
+  .wf-card {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 4px 20px 16px;
+    margin: 18px 0;
+    background: var(--panel);
+  }
+  kbd {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-bottom-width: 2px;
+    border-radius: 5px;
+    padding: 1px 6px;
+    font-size: 12px;
+    font-family: monospace;
+  }
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    padding: 24px;
+    border-top: 1px solid var(--border);
+  }
+  a { color: var(--accent); }
+  /* 主题切换按钮 */
+  #theme-toggle {
+    position: fixed;
+    top: 16px; right: 16px;
+    z-index: 100;
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--text);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    transition: transform .15s ease, background .2s ease;
+  }
+  #theme-toggle:hover { transform: scale(1.08); }
+  @media (max-width: 768px) {
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 110;
+      background: rgba(13,17,23,.48);
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity .2s ease, visibility 0s linear .2s;
+    }
+    body.nav-open::before {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transition: opacity .2s ease, visibility 0s linear 0s;
+    }
+    body.nav-open { overflow: hidden; }
+    .layout { padding-left: 0; }
+    body.nav-collapsed nav,
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      z-index: 120;
+      width: min(78vw, 300px);
+      height: 100vh;
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      transform: translateX(-100%);
+      visibility: hidden;
+      pointer-events: none;
+      transition: transform .28s cubic-bezier(.4,0,.2,1),
+                  border-color .28s ease,
+                  visibility 0s linear .28s;
+    }
+    body.nav-open nav {
+      transform: translateX(0);
+      visibility: visible;
+      pointer-events: auto;
+      transition: transform .28s cubic-bezier(.4,0,.2,1),
+                  border-color .28s ease,
+                  visibility 0s linear 0s;
+    }
+    .nav-head,
+    .nav-inner { width: min(78vw, 300px); }
+    main { padding: 84px 20px 20px; }
+    body:not(.nav-collapsed) #nav-toggle-btn,
+    body.nav-collapsed #nav-toggle-btn {
+      --ntop: 16px;
+      --nleft: 16px;
+      display: flex;
+      border-radius: 50%;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      box-shadow: 0 2px 8px rgba(0,0,0,.25);
+      color: var(--text);
+    }
+    body:not(.nav-collapsed) #nav-toggle-btn:hover,
+    body.nav-collapsed #nav-toggle-btn:hover {
+      background: var(--panel);
+      color: var(--text);
+    }
+  }
+  @media print {
+    :root,
+    :root.light-theme,
+    :root.dark-theme {
+      --bg: #ffffff;
+      --panel: #f6f8fa;
+      --border: #d0d7de;
+      --text: #1f2328;
+      --muted: #59636e;
+      --accent: #0969da;
+      --accent2: #1a7f37;
+      --code-bg: #f6f8fa;
+      --warn-bg: #fff8c5;
+      --warn-border: #d4a72c;
+      --code-orange: #953800;
+      --hero-grad: linear-gradient(135deg, #eaf2ff 0%, #d8e6ff 100%);
+      --accent-soft: rgba(9,105,218,.10);
+      --cmt: #57606a;
+      --tok: #0550ae;
+      --del: #cf222e;
+    }
+    nav,
+    #theme-toggle,
+    #nav-toggle-btn { display: none !important; }
+    body::before { display: none !important; }
+    .layout {
+      display: block;
+      max-width: none;
+      margin: 0;
+      padding: 0;
+    }
+    main {
+      padding: 0;
+      width: 100%;
+    }
+    pre {
+      white-space: pre-wrap;
+      overflow: visible;
+    }
+    .step .num { background: none; color: #000; border: 1px solid #000; }
+  }
+</style>
+</head>
+<body>
+<button id="theme-toggle" aria-label="切换主题模式（自动/浅色/深色）" title="主题：跟随系统（点击切换）">🌓</button>
+<button id="nav-toggle-btn" aria-label="收起/展开目录" aria-expanded="true" aria-controls="site-nav" title="收起/展开目录">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="3" y="3" width="18" height="18" rx="2"/>
+    <line x1="9" y1="3" x2="9" y2="21"/>
+  </svg>
+</button>
+<div class="layout">
+  <nav id="site-nav">
+   <div class="nav-head">
+     <h2>目录</h2>
+     <span id="nav-btn-anchor" aria-hidden="true"></span>
+   </div>
+   <div class="nav-inner">
+    <a href="#intro">一、开始前的准备</a>
+    <a href="#intro-links" class="sub">常用设置入口</a>
+    <a href="#sign-in">二、登录账户</a>
+    <a href="#sign-in-code" class="sub">验证码与验证提示</a>
+    <a href="#mail-settings">三、检查邮箱设置</a>
+    <a href="#mail-forwarding" class="sub">1. 自动转发</a>
+    <a href="#mail-rules" class="sub">2. 收件规则</a>
+    <a href="#mail-pop-imap" class="sub">3. POP / IMAP</a>
+    <a href="#app-access">四、清理第三方授权</a>
+    <a href="#security-info">五、更新安全信息</a>
+    <a href="#security-add" class="sub">1. 添加自己的验证方式</a>
+    <a href="#security-remove" class="sub">2. 检查并移除旧方式</a>
+    <a href="#security-pending" class="sub">3. 30 天等待期</a>
+    <a href="#password">六、修改密码</a>
+    <a href="#recovery">七、恢复代码与退出登录</a>
+    <a href="#recovery-code" class="sub">1. 生成并保存恢复代码</a>
+    <a href="#recovery-sign-out" class="sub">2. 退出其他会话</a>
+    <a href="#two-step">八、开启两步验证（可选）</a>
+    <a href="#two-step-enable" class="sub">1. 配置两步验证</a>
+    <a href="#two-step-backup" class="sub">2. 准备备用验证途径</a>
+    <a href="#checklist">九、完成检查与常见问题</a>
+    <a href="#checklist-faq" class="sub">常见问题</a>
+    <a href="#checklist-sources" class="sub">微软官方参考</a>
+   </div>
+  </nav>
+
+  <main>
+    <header class="hero">
+      <h1>Outlook 邮箱安全设置教程</h1>
+      <p>从邮箱设置、第三方授权到安全信息、恢复代码与两步验证（可选），逐步检查你的个人 Microsoft 账户</p>
+      <p class="updated">最后更新：<time id="last-updated" datetime="2026-11-02T06:36:01Z">2026-11-02</time></p>
+    </header>
+
+    <section id="intro">
+      <h2>一、开始前的准备</h2>
+      <p>Outlook.com 邮箱使用个人 Microsoft 账户登录。检查邮箱安全时，除了修改密码，还应核对邮件转发、收件规则、应用授权和身份验证方式。本教程将这些设置整理成一条可逐项完成的操作路线，适用于 Outlook.com、Hotmail、Live 等个人账户；工作或学校账户的入口与权限由组织管理，可能不同。</p>
+      <p>动手前，先准备好：</p>
+      <ul>
+        <li><strong>一台你信任的设备</strong>：浏览器与系统保持更新；如果怀疑设备感染恶意软件，先按<a href="https://support.microsoft.com/en-us/accounts-billing/manage/how-to-recover-a-hacked-or-compromised-microsoft-account" target="_blank" rel="noopener noreferrer">微软的账户被盗处理流程</a>检查设备，再修改密码。</li>
+        <li><strong>一个长期由你管理的备用邮箱</strong>：先确认能正常登录和收信，避免添加后收不到验证码。</li>
+        <li><strong>当前可用的登录或验证方式</strong>：操作期间可能多次要求验证身份，先确认你能完成验证，再处理旧信息。</li>
+        <li><strong>保存新密码和恢复代码的位置</strong>：提前安排好，避免生成后遗漏保存。</li>
+      </ul>
+      <div class="note">
+        下文提供 6 张高清配图，点击可查看完整尺寸。配图用于定位设置入口，微软可能调整菜单名称、位置和可用选项，请以你账户实际显示为准。
+      </div>
+
+      <h3 id="intro-links">常用设置入口</h3>
+      <p>下面都是微软官方直达地址。登录后若没有直接进入目标设置，可从 <a href="https://account.microsoft.com/security" target="_blank" rel="noopener noreferrer">Microsoft 账户安全页面</a>继续操作，并确认右上角头像对应的是本次要检查的账户。</p>
+      <table>
+        <tr><th>要做什么</th><th>直达入口</th><th>对应章节</th></tr>
+        <tr><td>登录 Microsoft 账户</td><td><a href="https://login.live.com/?lang=zh-CN" target="_blank" rel="noopener noreferrer">打开登录页</a></td><td><a href="#sign-in">第二章</a></td></tr>
+        <tr><td>检查邮箱设置</td><td><a href="https://outlook.live.com/mail/?lang=zh-CN" target="_blank" rel="noopener noreferrer">打开 Outlook 邮箱</a></td><td><a href="#mail-settings">第三章</a></td></tr>
+        <tr><td>查看第三方应用权限</td><td><a href="https://account.live.com/consent/Manage/?lang=zh-CN" target="_blank" rel="noopener noreferrer">应用与服务授权</a></td><td><a href="#app-access">第四章</a></td></tr>
+        <tr><td>管理安全验证方式</td><td><a href="https://account.live.com/proofs/manage/additional?lang=zh-CN" target="_blank" rel="noopener noreferrer">管理登录和验证方式</a></td><td><a href="#security-info">第五章</a></td></tr>
+        <tr><td>修改账户密码</td><td><a href="https://account.live.com/password/Change/?lang=zh-CN" target="_blank" rel="noopener noreferrer">更改密码</a></td><td><a href="#password">第六章</a></td></tr>
+        <tr><td>恢复代码、退出所有登录</td><td><a href="https://account.live.com/proofs/manage/additional?lang=zh-CN" target="_blank" rel="noopener noreferrer">高级安全选项</a></td><td><a href="#recovery">第七章</a></td></tr>
+        <tr><td>开启两步验证（可选）</td><td><a href="https://account.microsoft.com/security" target="_blank" rel="noopener noreferrer">账户安全 → 管理登录方式</a></td><td><a href="#two-step">第八章</a></td></tr>
+        <tr><td>查看近期登录活动</td><td><a href="https://account.live.com/activity" target="_blank" rel="noopener noreferrer">近期活动</a></td><td><a href="#checklist">第九章</a></td></tr>
+      </table>
+      <div class="warn">
+        如果已经发现账户被他人使用，优先处理设备安全、密码和可疑会话，并参考<a href="https://support.microsoft.com/en-us/accounts-billing/manage/how-to-recover-a-hacked-or-compromised-microsoft-account" target="_blank" rel="noopener noreferrer">微软的账户被盗处理流程</a>。下面的章节顺序用于日常全面检查，不要求在紧急情况下逐章等待。
+      </div>
+    </section>
+
+    <section id="sign-in">
+      <h2>二、登录账户</h2>
+      <p><strong>直达入口：</strong><a href="https://login.live.com/?lang=zh-CN" target="_blank" rel="noopener noreferrer">Microsoft 账户登录</a></p>
+      <div class="step">
+        <div class="num">1</div>
+        <div class="body">打开登录页，输入本次要检查的 Outlook 邮箱地址，点击<strong>下一步 / Next</strong>。如果浏览器已经登录了其他 Microsoft 账户，先切换到账户对应的会话；也可以用无痕窗口避免混淆。</div>
+      </div>
+      <p><a href="assets/images/sign-in-options.png" target="_blank" rel="noopener noreferrer"><img src="assets/images/sign-in-options.png" alt="Microsoft 登录页：输入邮箱地址后点击 Next" width="1058" height="932" loading="lazy" decoding="async"></a></p>
+      <p>输入需要登录的邮箱地址。点击图片查看高清原图。</p>
+
+      <h3 id="sign-in-code">验证码与验证提示</h3>
+      <div class="step">
+        <div class="num">2</div>
+        <div class="body">按照账户提供的方式登录。如果页面显示<strong>通过电子邮件发送代码 / Email a code</strong>，按提示补全已绑定的备用邮箱地址，再点击<strong>发送代码 / Send code</strong>；如果没有此选项，使用页面实际提供且由你掌握的密码、验证应用或其他登录方式。</div>
+      </div>
+      <div class="step">
+        <div class="num">3</div>
+        <div class="body">到对应备用邮箱收取验证码，返回当前窗口完成验证。打开备用邮箱时，使用另一个窗口或浏览器会话，避免把正在验证的账户切换掉。</div>
+      </div>
+      <p><a href="assets/images/email-code-sign-in.png" target="_blank" rel="noopener noreferrer"><img src="assets/images/email-code-sign-in.png" alt="验证邮箱界面：补全备用邮箱地址，点击 Send code 获取验证码" width="974" height="1078" loading="lazy" decoding="async"></a></p>
+      <p>备用邮箱验证码验证界面。图片中的邮箱为占位示例。</p>
+      <div class="warn">
+        验证码登录不代表后续操作一定不会再触发身份验证。微软可能根据设备、位置和操作要求额外验证；频繁重复请求验证码还可能受到限制。遇到收不到代码或验证受限时，参考<a href="https://support.microsoft.com/en-us/accounts-billing/manage/troubleshoot-microsoft-verification-code-issues" target="_blank" rel="noopener noreferrer">验证码问题排查说明</a>，不要连续重试。
+      </div>
+      <p>若询问是否保持登录，在自己的可信设备上按需要选择；公共或共享设备不要保持登录，使用结束后主动退出并关闭会话。参见<a href="https://support.microsoft.com/en-us/accounts-billing/manage/how-to-help-keep-your-microsoft-account-secure" target="_blank" rel="noopener noreferrer">微软的账户安全建议</a>。</p>
+      <p class="exp">能够进入目标账户，并且清楚当前使用的是哪个账户、哪一种身份验证方式。</p>
+    </section>
+
+    <section id="mail-settings">
+      <h2>三、检查邮箱设置</h2>
+      <p><strong>直达入口：</strong><a href="https://outlook.live.com/mail/?lang=zh-CN" target="_blank" rel="noopener noreferrer">Outlook 网页邮箱</a></p>
+      <p>打开邮箱右上角的<strong>设置齿轮</strong>，进入<strong>邮件 / Mail</strong>。这里要分别检查自动转发、收件规则和 POP / IMAP；它们是不同的设置项。</p>
+
+      <h3 id="mail-forwarding">1. 检查自动转发</h3>
+      <ol>
+        <li>找到<strong>转发 / Forwarding</strong>，部分界面显示为<strong>转发和 IMAP / Forwarding and IMAP</strong>。</li>
+        <li>检查是否启用了转发，以及目标邮箱地址是否属于你、是否仍有用途。</li>
+        <li>对不认识或不需要的自动转发，关闭<strong>启用转发 / Enable forwarding</strong>，并保存设置。</li>
+      </ol>
+      <p>操作参考：<a href="https://support.microsoft.com/en-us/outlook/turn-on-or-off-automatic-forwarding-in-outlook-com" target="_blank" rel="noopener noreferrer">在 Outlook.com 中打开或关闭自动转发</a>。</p>
+      <p><a href="assets/images/mail-forwarding-pop-imap.png" target="_blank" rel="noopener noreferrer"><img src="assets/images/mail-forwarding-pop-imap.png" alt="Outlook 邮件设置：红框标注自动转发、POP 和 IMAP 开关" width="1928" height="1522" loading="lazy" decoding="async"></a></p>
+      <p>自动转发与 POP / IMAP 设置。截图中的红框分别标出了需要核对的开关。</p>
+
+      <h3 id="mail-rules">2. 补查收件规则</h3>
+      <p>在<strong>设置 → 邮件 → 规则 / Rules</strong>中逐条查看规则的条件和动作。重点检查会把邮件转发、重定向到陌生地址，或把重要邮件删除、移动到其他文件夹的规则；确认不是自己需要的规则后，再停用或删除。</p>
+      <div class="note">
+        关闭自动转发开关后，仍要检查规则。规则本身也能把邮件转发或重定向到其他地址，不能只看上一节的转发开关。参见<a href="https://support.microsoft.com/en-us/outlook/mail/use-rules-to-automatically-forward-messages" target="_blank" rel="noopener noreferrer">使用规则自动转发邮件</a>。
+      </div>
+
+      <h3 id="mail-pop-imap">3. 按实际需要关闭 POP / IMAP</h3>
+      <p>如果你只使用网页邮箱，不需要通过 POP 或 IMAP 收取邮件，可将<strong>允许设备和应用使用 POP / IMAP</strong>关闭并保存。如果正在使用 Thunderbird 等邮件客户端，先确认它的连接方式与用途，关闭后相应客户端可能无法继续同步邮件。</p>
+      <p>微软目前说明 Outlook.com 的 POP / IMAP 访问默认关闭，需要使用时才手动开启，并采用 OAuth2 / Modern Auth。菜单位置以<a href="https://support.microsoft.com/en-us/outlook/pop-imap-and-smtp-settings-for-outlook-com" target="_blank" rel="noopener noreferrer">官方 POP、IMAP 和 SMTP 设置说明</a>为准。</p>
+      <p class="exp">没有陌生的转发目标或收件规则；POP / IMAP 的启用状态符合你实际使用的邮件客户端需求。</p>
+    </section>
+
+    <section id="app-access">
+      <h2>四、清理第三方授权</h2>
+      <p><strong>直达入口：</strong><a href="https://account.live.com/consent/Manage/?lang=zh-CN" target="_blank" rel="noopener noreferrer">你已授予访问权限的应用和服务</a></p>
+      <p>这里管理的是<strong>应用授权</strong>。某些邮件客户端或服务获准后，可以在相应权限范围内访问邮件或账户数据，因此要核对应用名称与权限，不能仅把它理解为设备登录记录。</p>
+      <div class="step">
+        <div class="num">1</div>
+        <div class="body">打开授权列表，逐项确认应用是否由你添加、现在是否仍在使用；点进应用查看其获得的权限。</div>
+      </div>
+      <div class="step">
+        <div class="num">2</div>
+        <div class="body">对于陌生或已经不再使用的应用，进入详情，选择<strong>删除这些权限 / Remove these permissions</strong>，按提示撤销授权。需要保留的客户端先确认用途，避免误删后影响日常收信。</div>
+      </div>
+      <p><a href="assets/images/third-party-app-permissions.png" target="_blank" rel="noopener noreferrer"><img src="assets/images/third-party-app-permissions.png" alt="Microsoft 应用与服务授权列表：示例账户没有授予任何应用访问权限" width="1418" height="470" loading="lazy" decoding="async"></a></p>
+      <p>列表为空时的示例；如果已有授权，这里会显示相应应用。微软在<a href="https://support.microsoft.com/en-us/todo/sync-microsoft-to-do-with-the-samsung-reminder-app" target="_blank" rel="noopener noreferrer">应用授权撤销说明</a>中也使用此授权管理入口。</p>
+      <div class="note">列表为空只说明这个授权列表中没有应用，仍需继续核对安全验证方式和近期活动。</div>
+      <p class="exp">授权列表中只保留你认识且确实需要的应用与权限。</p>
+    </section>
+
+    <section id="security-info">
+      <h2>五、更新安全信息</h2>
+      <p><strong>直达入口：</strong><a href="https://account.live.com/proofs/manage/additional?lang=zh-CN" target="_blank" rel="noopener noreferrer">管理登录和身份验证方式</a></p>
+      <p>安全信息用于接收验证码、验证身份或帮助恢复账户。这里的<strong>备用邮箱</strong>与邮箱别名、邮件转发目标是不同设置；本章处理的是安全验证方式。</p>
+
+      <h3 id="security-add">1. 先添加并验证自己的方式</h3>
+      <ol>
+        <li>找到<strong>添加新的登录或验证方式 / Add a new way to sign in or verify</strong>。</li>
+        <li>选择页面提供的邮箱验证等方式，填写长期由你管理的备用邮箱。</li>
+        <li>到新邮箱收取验证码，返回完成验证，确认新方式已出现在安全信息列表中。</li>
+      </ol>
+      <p><a href="assets/images/security-info.png" target="_blank" rel="noopener noreferrer"><img src="assets/images/security-info.png" alt="安全信息列表：通过 Add a new way to sign in or verify 添加自己的验证方式" width="1230" height="630" loading="lazy" decoding="async"></a></p>
+      <p>登录与身份验证方式列表。当前可添加的选项可能不同，部分账户可能不再提供添加手机号的选项。参见<a href="https://support.microsoft.com/en-us/accounts-billing/manage/microsoft-account-security-info-verification-codes" target="_blank" rel="noopener noreferrer">Microsoft 账户安全信息与验证码</a>。</p>
+
+      <h3 id="security-remove">2. 检查并移除旧方式</h3>
+      <p>新方式验证完成后，再逐项核对旧的备用邮箱、手机号、验证应用、通行密钥等登录或验证方式。对于不属于你、已经无法使用或不再需要的项目，展开对应条目，按页面提示移除；仍由你使用的方式可以保留。</p>
+      <div class="warn">
+        <strong>不要先删光再添加。</strong>开始移除前，确认新的验证方式可用，并始终保留自己掌握的有效方式。如果旧方式全都无法使用，应按账户恢复提示处理，不能把“我没有这些信息”当作普通换绑的捷径。具体处理方式参见<a href="https://support.microsoft.com/en-us/accounts-billing/manage/troubleshoot-microsoft-verification-code-issues" target="_blank" rel="noopener noreferrer">安全信息丢失与验证码排查说明</a>。
+      </div>
+
+      <h3 id="security-pending">3. 留意 30 天等待期</h3>
+      <p>微软说明，移除并替换全部安全信息可能使账户进入<strong>30 天的受限等待期</strong>，部分需要安全验证的操作暂时不可用。普通添加一个新备用邮箱与替换全部安全信息不是同一种流程。</p>
+      <p>如果看到<strong>安全信息更改仍在等待中 / Security info change is still pending</strong>，先阅读页面所列限制和生效时间，不要反复提交替换请求；若该变更并非你本人发起，使用页面的“让我们知道”等入口报告。详见<a href="https://support.microsoft.com/en-us/accounts-billing/manage/what-does-security-info-change-is-still-pending-mean" target="_blank" rel="noopener noreferrer">安全信息更改等待期说明</a>。</p>
+      <p class="exp">已验证至少一种自己掌握的有效方式，列表中没有陌生验证方式，并清楚是否存在待生效的安全信息变更。</p>
+    </section>
+
+    <section id="password">
+      <h2>六、修改密码</h2>
+      <p><strong>直达入口：</strong><a href="https://account.live.com/password/Change/?lang=zh-CN" target="_blank" rel="noopener noreferrer">更改 Microsoft 账户密码</a></p>
+      <div class="step">
+        <div class="num">1</div>
+        <div class="body">打开更改密码页面，确认账户无误，并按提示完成身份验证。若直达链接只打开账户首页，进入<strong>安全 → 更改密码</strong>。</div>
+      </div>
+      <div class="step">
+        <div class="num">2</div>
+        <div class="body">按页面要求输入当前密码及新密码。新密码使用足够长且不与其他网站重复的内容；可以使用密码管理器生成并保存。</div>
+      </div>
+      <div class="step">
+        <div class="num">3</div>
+        <div class="body">提交保存，确认页面提示更改成功，并更新自己保存的密码记录。随后继续处理恢复代码和其他登录会话。</div>
+      </div>
+      <div class="note">
+        Outlook.com 密码就是该 Microsoft 账户的密码，修改后会影响使用同一账户登录的其他 Microsoft 服务。如果忘记当前密码，应走“忘记密码”的恢复流程；无密码账户按其现有登录方式和安全页面提示管理，不必为了照抄本章额外添加密码。参见<a href="https://support.microsoft.com/en-us/accounts-billing/manage/change-your-password-in-outlook-com" target="_blank" rel="noopener noreferrer">更改 Outlook.com 密码</a>和<a href="https://support.microsoft.com/en-us/accounts-billing/manage/how-to-help-keep-your-microsoft-account-secure" target="_blank" rel="noopener noreferrer">账户安全说明</a>。
+      </div>
+      <p class="exp">更改密码成功，新密码已妥善保存；若是无密码账户，已确认现有登录方式均由自己掌握。</p>
+    </section>
+
+    <section id="recovery">
+      <h2>七、恢复代码与退出登录</h2>
+      <p><strong>直达入口：</strong><a href="https://account.live.com/proofs/manage/additional?lang=zh-CN" target="_blank" rel="noopener noreferrer">高级安全选项</a>，与第五章管理安全信息使用同一入口。</p>
+
+      <h3 id="recovery-code">1. 生成并保存恢复代码</h3>
+      <ol>
+        <li>找到<strong>恢复代码 / Recovery code</strong>。</li>
+        <li>点击<strong>生成新代码 / Generate a new code</strong>，按提示完成验证。</li>
+        <li>立即保存新生成的 25 位恢复代码。微软建议打印后放在安全位置，并避免存放在用于登录该账户的设备上。</li>
+      </ol>
+      <div class="warn">
+        <strong>生成新恢复代码后，旧代码立即失效。</strong>已有代码不能事后从账户中重新查看；若没有保存，只能在仍可登录时再生成一份，并以最新一份为准。参见<a href="https://support.microsoft.com/en-us/accounts-billing/manage/how-to-get-a-microsoft-account-recovery-code" target="_blank" rel="noopener noreferrer">微软恢复代码说明</a>。
+      </div>
+      <p>恢复代码与邮件中的一次性验证码用途不同，请单独保管。不要把它发给别人，也不要只存在这个 Outlook 邮箱里，以免无法登录时同时失去取回代码的途径。</p>
+
+      <h3 id="recovery-sign-out">2. 退出其他会话</h3>
+      <ol>
+        <li>在同一安全页面找到<strong>退出所有登录 / Sign out everywhere</strong>。</li>
+        <li>确认密码、验证方式和恢复代码已经处理妥当后，选择退出，并按页面提示完成操作。</li>
+        <li>重新登录自己需要使用的浏览器或应用，再检查<a href="https://account.live.com/activity" target="_blank" rel="noopener noreferrer">近期活动</a>。</li>
+      </ol>
+      <p><a href="assets/images/recovery-code-sign-out.png" target="_blank" rel="noopener noreferrer"><img src="assets/images/recovery-code-sign-out.png" alt="高级安全选项：Generate a new code 生成恢复代码，Sign out everywhere 退出登录" width="924" height="1108" loading="lazy" decoding="async"></a></p>
+      <p>红色数字 1 对应生成恢复代码，数字 2 对应退出登录。</p>
+      <div class="note">
+        <strong>退出可能需要最多 24 小时，并且不包含 Xbox 主机。</strong>不要把点击成功理解为所有设备立即退出。此操作处理的是登录会话，仍应分别检查应用授权和邮箱转发。时间与例外以<a href="https://support.microsoft.com/en-us/accounts-billing/manage/how-to-sign-out-of-your-microsoft-account-everywhere" target="_blank" rel="noopener noreferrer">微软退出所有登录说明</a>为准。
+      </div>
+      <p class="exp">最新恢复代码已保存，退出操作已提交；已了解它的生效时间和 Xbox 例外。</p>
+    </section>
+
+    <section id="two-step">
+      <h2>八、开启两步验证（可选）</h2>
+      <p><strong>直达入口：</strong><a href="https://account.microsoft.com/security" target="_blank" rel="noopener noreferrer">Microsoft 账户安全页面</a> → <strong>管理登录方式 / Manage how I sign in</strong></p>
+      <p>两步验证为账户增加一层身份核验。<strong>本章为可选步骤，可按需决定是否开启。</strong>启用前，先确保验证方式、备用邮箱和恢复代码都由自己掌握，以免更换手机或无法收信时被锁在账户外。</p>
+
+      <h3 id="two-step-enable">1. 配置两步验证</h3>
+      <ol>
+        <li>在账户安全页面打开管理登录方式，找到<strong>其他安全设置 / Additional security</strong>。</li>
+        <li>在<strong>两步验证 / Two-step verification</strong>下选择<strong>开启 / Turn on</strong>。</li>
+        <li>按页面提示配置验证方式，并完成一次验证。需要扫描二维码时，使用自己掌握的验证设备。</li>
+        <li>返回安全页面，确认两步验证状态为已开启。</li>
+      </ol>
+      <div class="note">
+        Microsoft Authenticator 是微软支持的验证方式之一，也可按账户页面提供的选项配置其他方式。选择时应考虑设备更换、丢失后的恢复途径，并确认备用验证方式可用。操作依据：<a href="https://support.microsoft.com/en-us/accounts-billing/security/how-to-use-two-step-verification-with-your-microsoft-account" target="_blank" rel="noopener noreferrer">Microsoft 账户两步验证说明</a>。
+      </div>
+
+      <h3 id="two-step-backup">2. 准备备用验证途径</h3>
+      <ul>
+        <li>保留多种仍可使用、由自己掌握的验证方式，不要把所有方式都集中在同一台可能丢失的手机上。</li>
+        <li>确认备用邮箱本身能够登录，且没有使用与此账户相同的密码。</li>
+        <li>按第七章保管恢复代码；如果设置过程中重新生成了代码，以最新保存的一份为准。</li>
+        <li>更换手机前，先确认新设备上的验证方式可用，再处理旧设备。</li>
+      </ul>
+      <div class="warn">开启两步验证后，丢失验证方式可能导致长时间无法恢复访问。微软建议关联三项安全信息以备不时之需；可用方式以当前账户页面为准，不要求一定添加手机号。</div>
+      <p class="exp">如选择开启，确认两步验证已启用、常用与备用验证方式均可使用，且恢复代码有独立的保存位置；如不启用，可跳过本章，继续下一章的检查。</p>
+    </section>
+
+    <section id="checklist">
+      <h2>九、完成检查与常见问题</h2>
+      <p>完成设置后，可以按下面的表格复查。近期活动页面能帮助查看最近 30 天内的重要登录和安全事件；它并不展示所有活动，位置也可能受网络运营商影响，应结合时间、设备和操作判断。参见<a href="https://support.microsoft.com/en-us/accounts-billing/security/what-is-the-recent-activity-page" target="_blank" rel="noopener noreferrer">近期活动页面说明</a>。</p>
+      <table>
+        <tr><th>检查项</th><th>完成标准</th></tr>
+        <tr><td>当前账户</td><td>邮箱与账户头像对应正确，没有在多个账户间误操作。</td></tr>
+        <tr><td>自动转发与收件规则</td><td>没有陌生转发地址、重定向或异常处理邮件的规则。</td></tr>
+        <tr><td>POP / IMAP</td><td>按实际使用需要启用；不用的访问方式已关闭。</td></tr>
+        <tr><td>第三方授权</td><td>仅保留自己认识且确实需要的应用权限。</td></tr>
+        <tr><td>安全信息</td><td>备用邮箱等已验证，没有陌生方式；待生效变更已核对。</td></tr>
+        <tr><td>密码</td><td>需要修改的密码已更改并保存，没有与其他网站复用。</td></tr>
+        <tr><td>恢复代码</td><td>最新一份已妥善保管，旧代码已按失效处理。</td></tr>
+        <tr><td>登录会话</td><td>已按需要提交退出操作，了解最多 24 小时的生效时间和 Xbox 例外。</td></tr>
+        <tr><td>两步验证（可选）</td><td>按需决定是否开启；已开启时，确认有可用的备用验证方式。</td></tr>
+        <tr><td>近期活动</td><td>已核对可疑登录和安全信息变更；陌生异常活动按页面指引处理。</td></tr>
+      </table>
+
+      <h3 id="checklist-faq">常见问题</h3>
+      <p class="subhead">为什么我看到的菜单与截图不同？</p>
+      <p>配图用于说明设置入口，微软可能调整页面布局和可用选项。优先根据正文中的功能名称查找；直达链接未进入目标页时，从账户安全页面或 Outlook 设置继续操作。</p>
+      <p class="subhead">没有验证码登录选项，是否必须换一种方式？</p>
+      <p>不必强求。使用账户当前提供且由你掌握的方式，额外验证按提示完成；登录方式不会保证免除后续验证。收不到代码时查看<a href="https://support.microsoft.com/en-us/accounts-billing/manage/troubleshoot-microsoft-verification-code-issues" target="_blank" rel="noopener noreferrer">官方排查说明</a>。</p>
+      <p class="subhead">提示安全信息更改还要等待 30 天怎么办？</p>
+      <p>先核对变更是否本人发起、何时生效和当前受限项目。不是本人发起的变更，按页面指引报告；本人发起的替换按微软给出的流程处理。不要把普通添加备用邮箱与替换全部安全信息混为一谈。</p>
+
+      <h3 id="checklist-sources">微软官方参考</h3>
+      <p>以下微软官方资料用于核对邮箱设置、账户安全与身份验证机制；官方说明核对日期为 2026-11-02。</p>
+      <ul>
+        <li><a href="https://support.microsoft.com/en-us/outlook/turn-on-or-off-automatic-forwarding-in-outlook-com" target="_blank" rel="noopener noreferrer">Outlook.com 自动转发</a>、<a href="https://support.microsoft.com/en-us/outlook/mail/use-rules-to-automatically-forward-messages" target="_blank" rel="noopener noreferrer">规则转发与重定向</a>、<a href="https://support.microsoft.com/en-us/outlook/pop-imap-and-smtp-settings-for-outlook-com" target="_blank" rel="noopener noreferrer">POP / IMAP 设置</a></li>
+        <li><a href="https://support.microsoft.com/en-us/accounts-billing/manage/microsoft-account-security-info-verification-codes" target="_blank" rel="noopener noreferrer">安全信息与验证码</a>、<a href="https://support.microsoft.com/en-us/accounts-billing/manage/what-does-security-info-change-is-still-pending-mean" target="_blank" rel="noopener noreferrer">安全信息变更等待期</a></li>
+        <li><a href="https://support.microsoft.com/en-us/accounts-billing/manage/change-your-password-in-outlook-com" target="_blank" rel="noopener noreferrer">更改 Outlook.com 密码</a>、<a href="https://support.microsoft.com/en-us/accounts-billing/manage/how-to-get-a-microsoft-account-recovery-code" target="_blank" rel="noopener noreferrer">Microsoft 账户恢复代码</a></li>
+        <li><a href="https://support.microsoft.com/en-us/accounts-billing/manage/how-to-sign-out-of-your-microsoft-account-everywhere" target="_blank" rel="noopener noreferrer">退出所有登录</a>、<a href="https://support.microsoft.com/en-us/accounts-billing/security/how-to-use-two-step-verification-with-your-microsoft-account" target="_blank" rel="noopener noreferrer">两步验证</a></li>
+        <li><a href="https://support.microsoft.com/en-us/accounts-billing/security/what-is-the-recent-activity-page" target="_blank" rel="noopener noreferrer">近期活动</a>、<a href="https://support.microsoft.com/en-us/accounts-billing/manage/troubleshoot-microsoft-verification-code-issues" target="_blank" rel="noopener noreferrer">验证码问题排查</a>、<a href="https://support.microsoft.com/en-us/accounts-billing/manage/how-to-recover-a-hacked-or-compromised-microsoft-account" target="_blank" rel="noopener noreferrer">账户被盗处理流程</a></li>
+      </ul>
+    </section>
+
+    <footer>
+      Outlook 邮箱安全设置教程 · AxaaHub<br>
+      官方资料核对：2026-11-02 · 实际界面、功能与限制以 Microsoft 官方当前说明为准
+    </footer>
+  </main>
+</div>
+
+<script>
+function storeGet(k) {
+  try { return localStorage.getItem(k); } catch (e) { return null; }
+}
+function storeSet(k, v) {
+  try { localStorage.setItem(k, v); } catch (e) {}
+}
+function storeRemove(k) {
+  try { localStorage.removeItem(k); } catch (e) {}
+}
+
+(function () {
+  var root = document.documentElement;        // <html>
+  var btn = document.getElementById('theme-toggle');
+  var KEY = 'aidoc-theme';
+  var media = window.matchMedia ? window.matchMedia('(prefers-color-scheme: light)') : null;
+
+  // 应用主题：'dark' / 'light' / null(跟随系统)
+  function apply(mode) {
+    root.classList.remove('dark-theme', 'light-theme');
+    if (mode === 'dark')  root.classList.add('dark-theme');
+    if (mode === 'light') root.classList.add('light-theme');
+    if (mode === 'light') {
+      btn.textContent = '☀️';
+      btn.title = '主题：浅色（点击切换）';
+    } else if (mode === 'dark') {
+      btn.textContent = '🌙';
+      btn.title = '主题：深色（点击切换）';
+    } else {
+      btn.textContent = '🌓';
+      btn.title = '主题：跟随系统（点击切换）';
+    }
+  }
+
+  // 初始化：优先读取用户手动选择，否则跟随系统
+  apply(storeGet(KEY));
+
+  // 点击按 自动 -> 浅色 -> 深色 -> 自动 三态循环
+  btn.addEventListener('click', function () {
+    var order = [null, 'light', 'dark'];
+    var next = order[(order.indexOf(storeGet(KEY)) + 1) % order.length];
+    apply(next);
+    if (next) storeSet(KEY, next);
+    else storeRemove(KEY);
+  });
+
+  // 未手动选择时，跟随系统实时变化
+  function onSystemThemeChange() {
+    if (!storeGet(KEY)) apply(null);
+  }
+  if (media) {
+    if (media.addEventListener) media.addEventListener('change', onSystemThemeChange);
+    else if (media.addListener) media.addListener(onSystemThemeChange);
+  }
+})();
+
+// ---- 平滑滚动：等加载与滚动位置恢复完成后再启用 ----
+(function () {
+  function enable() {
+    // 再等一帧，确保浏览器的滚动位置恢复已完成，避免被动画化
+    requestAnimationFrame(function () {
+      document.documentElement.classList.add('smooth-scroll');
+    });
+  }
+  if (document.readyState === 'complete') enable();
+  else window.addEventListener('load', enable);
+})();
+
+// ---- 最后更新日期：按系统时区与地区格式显示 ----
+(function () {
+  var el = document.getElementById('last-updated');
+  if (!el) return;
+  var d = new Date(el.getAttribute('datetime'));
+  if (isNaN(d)) return;
+  // 数字短格式 YYYY-MM-DD，按系统本地时区取年月日
+  var p = function (n) { return String(n).padStart(2, '0'); };
+  el.textContent = d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+  el.title = d.toLocaleString();   // 悬停显示完整本地日期时间
+})();
+
+// ---- 目录收起 / 展开（单按钮在两个位置间平移变形）----
+(function () {
+  var KEY = 'aidoc-nav';
+  var btn = document.getElementById('nav-toggle-btn');
+  var nav = document.getElementById('site-nav');
+  var anchor = document.getElementById('nav-btn-anchor');
+  var rootEl = document.documentElement;
+  var layoutEl = document.querySelector('.layout');
+  var mobileMedia = window.matchMedia ? window.matchMedia('(max-width: 768px)') : null;
+  var wasMobile = isMobile();
+
+  function isMobile() {
+    return mobileMedia ? mobileMedia.matches : window.innerWidth <= 768;
+  }
+
+  function syncNavX() {
+    if (isMobile() || !layoutEl) return;
+    rootEl.style.setProperty('--nav-left', layoutEl.getBoundingClientRect().left + 'px');
+  }
+
+  function setExpanded(open) {
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+
+  function syncExpanded() {
+    setExpanded(isMobile() ? document.body.classList.contains('nav-open') : !document.body.classList.contains('nav-collapsed'));
+  }
+
+  function setDrawerOpen(open) {
+    document.body.classList.toggle('nav-open', open);
+    syncExpanded();
+  }
+
+  function syncNavScrollable() {
+    var inner = document.querySelector('.nav-inner');
+    if (inner) inner.classList.toggle('can-scroll', inner.scrollHeight > inner.clientHeight);
+  }
+
+  // 把“展开态”按钮该停靠的坐标（= 目录内锚点中心）写入 CSS 变量，
+  // 这样无论窗口多宽、布局如何居中，按钮都能精确贴合目录里的位置。
+  function syncAnchor() {
+    if (isMobile()) return;
+    var r = anchor.getBoundingClientRect();
+    // 锚点未渲染时（如移动端 nav: display:none，rect 全为 0）不更新，
+    // 否则会写入 -21px 等错误坐标，放大回桌面端时按钮就会“飞”过去。
+    if (r.width === 0 && r.height === 0) return;
+    rootEl.style.setProperty('--nleft', (r.left + r.width / 2 - 21) + 'px');
+    rootEl.style.setProperty('--ntop',  (r.top + r.height / 2 - 21) + 'px');
+  }
+
+  // 跟随式更新（缩放 / 滚动）：期间关闭按钮过渡，让它即时贴住锚点而不是“飞”；
+  // 停止一小段时间后再恢复过渡，保证收起/展开“点击”时仍有平移变形动画。
+  var animTimer;
+  function syncFollow() {
+    btn.style.transition = 'none';
+    syncAnchor();
+    clearTimeout(animTimer);
+    animTimer = setTimeout(function () { btn.style.transition = ''; }, 200);
+  }
+
+  function setCollapsed(c) {
+    document.body.classList.toggle('nav-collapsed', c);
+    storeSet(KEY, c ? '1' : '0');
+    syncExpanded();
+  }
+  // 恢复上次状态
+  if (storeGet(KEY) === '1') document.body.classList.add('nav-collapsed');
+  syncExpanded();
+  syncNavScrollable();
+
+  // 首次定位时临时禁用过渡，避免刷新瞬间从默认位置“滑”一下
+  btn.style.transition = 'none';
+  syncNavX();
+  syncAnchor();
+  void btn.offsetWidth;          // 强制回流，让定位立即落定
+  requestAnimationFrame(function () { btn.style.transition = ''; });
+
+  window.addEventListener('resize', function () {
+    var nowMobile = isMobile();
+    if (nowMobile !== wasMobile) {
+      document.body.classList.remove('nav-open');
+      wasMobile = nowMobile;
+    }
+    syncExpanded();
+    syncNavScrollable();
+    syncNavX();
+    syncFollow();
+  });
+  window.addEventListener('scroll', syncFollow, { passive: true });
+
+  btn.addEventListener('click', function () {
+    // 确保点击切换一定带动画（即便此刻正处于缩放的“无过渡”窗口内）
+    clearTimeout(animTimer);
+    btn.style.transition = '';
+    if (isMobile()) {
+      setDrawerOpen(!document.body.classList.contains('nav-open'));
+      return;
+    }
+    setCollapsed(!document.body.classList.contains('nav-collapsed'));
+  });
+
+  nav.addEventListener('click', function (e) {
+    var t = e.target;
+    while (t && t !== nav) {
+      if (t.tagName === 'A') {
+        if (isMobile()) setDrawerOpen(false);
+        return;
+      }
+      t = t.parentNode;
+    }
+  });
+
+  document.addEventListener('click', function (e) {
+    if (!isMobile() || !document.body.classList.contains('nav-open')) return;
+    if (nav.contains(e.target) || btn.contains(e.target)) return;
+    setDrawerOpen(false);
+  });
+})();
+
+// ---- 滚动高亮目录（scroll-spy）----
+(function () {
+  var links = Array.prototype.slice.call(document.querySelectorAll('nav a[href^="#"]'));
+  var navBox = document.querySelector('.nav-inner');
+  // 建立 id -> 链接 映射，收集监听目标，并记录每个子项所属的主目录链接
+  var map = {};
+  var targets = [];
+  var parentOf = {};      // 子链接 -> 其上方最近的主目录链接
+  var lastMain = null;
+  links.forEach(function (a) {
+    var id = decodeURIComponent(a.getAttribute('href').slice(1));
+    var el = document.getElementById(id);
+    if (el) { map[id] = a; targets.push(el); }
+    if (a.classList.contains('sub')) {
+      if (lastMain) parentOf[id] = lastMain;
+    } else {
+      lastMain = a;        // 记住当前主目录，后续子项归属于它
+    }
+  });
+  if (!targets.length) return;
+
+  var current = null;   // 当前命中的 id，避免重复刷新 DOM
+  function glide(el, top) {
+    if (el.scrollTo && 'scrollBehavior' in document.documentElement.style) el.scrollTo({ top: top, behavior: 'smooth' });
+    else el.scrollTop = top;
+  }
+
+  function highlight() {
+    // 触发线设在视口约 28% 高度处；命中“已越过触发线的最后一个标题”
+    var line = window.innerHeight * 0.28;
+    var best = targets[0].id;
+    var atBottom = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2;
+    var atTop = window.scrollY <= 2;
+    if (atBottom) {
+      best = targets[targets.length - 1].id;
+    } else {
+      for (var i = 0; i < targets.length; i++) {
+        if (targets[i].getBoundingClientRect().top <= line) {
+          best = targets[i].id;   // 文档顺序靠后者覆盖，得到最近越过的标题
+        } else {
+          break;                  // 后面的还没滚到，无需再看
+        }
+      }
+    }
+    // 正文回到最顶部：目录也平滑回到自身顶部（底部方向保持不跟随）
+    if (atTop && navBox && navBox.scrollTop > 0) glide(navBox, 0);
+    if (best === current) return;
+    current = best;
+
+    links.forEach(function (a) { a.classList.remove('active', 'active-sub'); });
+    var link = map[best];
+    if (!link) return;
+    if (link.classList.contains('sub')) {
+      // 当前在子小节：子项用淡标识，父级主目录用醒目标识
+      link.classList.add('active-sub');
+      if (parentOf[best]) parentOf[best].classList.add('active');
+    } else {
+      // 当前在主章节标题处
+      link.classList.add('active');
+    }
+    // 目录较长时，让高亮项在目录内纵向可见。
+    // 只调整 .nav-inner 的纵向 scrollTop，不用 scrollIntoView——
+    // 后者会顺带横向滚动“收起态”的目录（width:0; overflow:hidden），
+    // 留下残留的 scrollLeft，导致展开时内容横向偏移。
+    // 使用 smooth 滚动最小距离，避免矮窗口下目录高亮瞬间跳变。
+    // 页面到达两端时只更新高亮，不再把目录滚向其两端；高亮项此时可能被裁掉一角，属有意取舍。
+    var box = navBox;
+    if (box && !atTop && !atBottom) {
+      var lr = link.getBoundingClientRect();
+      var br = box.getBoundingClientRect();
+      var target = null;
+      if (lr.top < br.top) target = box.scrollTop - (br.top - lr.top) - 8;
+      else if (lr.bottom > br.bottom) target = box.scrollTop + (lr.bottom - br.bottom) + 8;
+      if (target !== null) {
+        glide(box, target);
+      }
+    }
+  }
+
+  // 用 rAF 节流滚动事件
+  var ticking = false;
+  function onScroll() {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(function () { highlight(); ticking = false; });
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll);
+  highlight();   // 初始执行一次
+})();
+</script>
+</body>
+</html>
