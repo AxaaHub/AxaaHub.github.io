@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>链接跳转检查工具 · 本地使用说明</title>
+<style>
+  /* 深色主题（默认变量） */
+  :root {
+    --bg: #0d1117;
+    --panel: #161b22;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --accent2: #3fb950;
+    --code-bg: #1c2128;
+    --warn-bg: #2d2212;
+    --warn-border: #9e6a03;
+    --code-orange: #ffa657;
+    --hero-grad: linear-gradient(135deg, #161b22 0%, #1c2c45 100%);
+    --accent-soft: rgba(88,166,255,.14);
+    --cmt: #8b949e;
+    --tok: #79c0ff;
+    --del: #f85149;
+  }
+  /* 浅色主题变量 */
+  .light-theme {
+    --bg: #ffffff;
+    --panel: #f6f8fa;
+    --border: #d0d7de;
+    --text: #1f2328;
+    --muted: #59636e;
+    --accent: #0969da;
+    --accent2: #1a7f37;
+    --code-bg: #f6f8fa;
+    --warn-bg: #fff8c5;
+    --warn-border: #d4a72c;
+    --code-orange: #953800;
+    --hero-grad: linear-gradient(135deg, #eaf2ff 0%, #d8e6ff 100%);
+    --accent-soft: rgba(9,105,218,.10);
+    --cmt: #57606a;
+    --tok: #0550ae;
+    --del: #cf222e;
+  }
+  /* 跟随系统：未手动指定时，系统为浅色则套用浅色 */
+  @media (prefers-color-scheme: light) {
+    :root:not(.dark-theme) {
+      --bg: #ffffff;
+      --panel: #f6f8fa;
+      --border: #d0d7de;
+      --text: #1f2328;
+      --muted: #59636e;
+      --accent: #0969da;
+      --accent2: #1a7f37;
+      --code-bg: #f6f8fa;
+      --warn-bg: #fff8c5;
+      --warn-border: #d4a72c;
+      --code-orange: #953800;
+      --hero-grad: linear-gradient(135deg, #eaf2ff 0%, #d8e6ff 100%);
+      --accent-soft: rgba(9,105,218,.10);
+      --cmt: #57606a;
+      --tok: #0550ae;
+      --del: #cf222e;
+    }
+  }
+  html { transition: background .2s ease; }
+  body { transition: background .2s ease, color .2s ease; }
+  * { box-sizing: border-box; }
+  /* 平滑滚动仅在页面加载后启用（加 .smooth-scroll 类），
+     否则刷新时浏览器的“滚动位置恢复”也会被动画化，出现从顶部滑到原位置的现象 */
+  html.smooth-scroll { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+      "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+  }
+  .layout { display: flex; max-width: 1200px; margin: 0 auto; padding-left: 240px; transition: padding-left .28s cubic-bezier(.4,0,.2,1); }
+  /* 侧边目录 */
+  /* fixed 脱离文档流，页面到边弹性回弹时侧栏与分隔线不随文档平移；
+     left 的 calc 兜底值 = 居中 1200px 布局的左缘（50vw−600px），
+     JS 会用 .layout 实际 rect 校准以消除经典滚动条下 vw 偏差 */
+  nav {
+    position: fixed;
+    top: 0;
+    left: var(--nav-left, max(0px, calc(50vw - 600px)));
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    width: 240px;
+    height: 100vh;
+    overflow: hidden;            /* 裁掉内层，实现平滑滑入/滑出 */
+    border-right: 1px solid var(--border);
+    visibility: visible;
+    transition: width .28s cubic-bezier(.4,0,.2,1),
+                border-color .28s ease,
+                visibility 0s linear 0s;
+  }
+  .nav-inner {
+    width: 240px;                /* 固定宽度，收起时内容不重排 */
+    flex: 1;
+    min-height: 0;
+    box-sizing: border-box;
+    padding: 0 16px 32px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .nav-inner.can-scroll { overscroll-behavior: contain; }
+  .nav-inner::-webkit-scrollbar { width: 6px; }
+  .nav-inner::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  .nav-inner::-webkit-scrollbar-track { background: transparent; }
+  .nav-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 240px;
+    flex-shrink: 0;
+    padding: 32px 16px 12px;
+  }
+  nav h2 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin: 0 0 0 8px;
+    padding: 0;
+    border-bottom: none;
+    white-space: nowrap;
+  }
+  /* 目录头部用来占位的锚点（标记按钮在目录内时应处的位置） */
+  #nav-btn-anchor {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+  }
+  /* 收起后：目录宽度归零（内层被裁切滑出），正文占满 */
+  body.nav-collapsed .layout { padding-left: 0; }
+  body.nav-collapsed nav {
+    width: 0;
+    border-right-color: transparent;
+    visibility: hidden;
+    pointer-events: none;
+    transition: width .28s cubic-bezier(.4,0,.2,1),
+                border-color .28s ease,
+                visibility 0s linear .28s;
+  }
+  /* 唯一的切换按钮：在“目录内位置”和“左上角”之间平移并变形 */
+  #nav-toggle-btn {
+    position: fixed;
+    z-index: 100;
+    top: var(--ntop, 28px);
+    left: var(--nleft, 16px);
+    width: 42px; height: 42px;
+    display: flex;
+    align-items: center; justify-content: center;
+    cursor: pointer;
+    transition:
+      top    .3s cubic-bezier(.4,0,.2,1),
+      left   .3s cubic-bezier(.4,0,.2,1),
+      width  .3s cubic-bezier(.4,0,.2,1),
+      height .3s cubic-bezier(.4,0,.2,1),
+      border-radius .3s ease,
+      background    .3s ease,
+      border-color  .3s ease,
+      box-shadow    .3s ease,
+      color         .3s ease;
+  }
+  /* 展开态（目录可见）：贴合目录内的锚点，扁平“幽灵”样式 */
+  body:not(.nav-collapsed) #nav-toggle-btn {
+    border-radius: 6px;
+    background: transparent;
+    border: 1px solid transparent;
+    box-shadow: none;
+    color: var(--muted);
+  }
+  body:not(.nav-collapsed) #nav-toggle-btn:hover {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  /* 收起态：移到左上角，圆形悬浮按钮样式 */
+  body.nav-collapsed #nav-toggle-btn {
+    --ntop: 16px;
+    --nleft: 16px;
+    border-radius: 50%;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    color: var(--text);
+  }
+  nav a {
+    position: relative;
+    display: block;
+    padding: 7px 10px 7px 16px;
+    margin: 1px 0;
+    color: var(--muted);
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 14px;
+  }
+  /* 左侧指示条（默认隐藏，hover/active 时显现） */
+  nav a::before {
+    content: "";
+    position: absolute;
+    left: 6px;
+    top: 50%;
+    width: 3px;
+    height: 0;
+    border-radius: 3px;
+    background: linear-gradient(var(--accent), var(--accent2));
+    transform: translateY(-50%);
+    opacity: 0;
+  }
+  nav a:hover { color: var(--text); background: var(--accent-soft); }
+  nav a.sub { padding-left: 28px; font-size: 13px; }
+  nav a.sub::before { left: 14px; }
+  /* 滚动高亮：当前主章节（醒目） */
+  nav a.active {
+    color: var(--accent);
+    background: var(--accent-soft);
+    font-weight: 600;
+  }
+  nav a.active::before {
+    height: 60%;
+    opacity: 1;
+  }
+  /* 滚动高亮：当前子小节（更淡，不抢主目录的风头） */
+  nav a.active-sub {
+    color: var(--text);
+  }
+  nav a.active-sub::before {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    opacity: .6;
+  }
+  /* 主体内容 */
+  main { flex: 1; padding: 32px 40px; min-width: 0; }
+  header.hero {
+    padding: 32px;
+    background: var(--hero-grad);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 32px;
+  }
+  header.hero h1 { margin: 0 0 8px; font-size: 28px; }
+  header.hero p { margin: 0; color: var(--muted); }
+  header.hero .updated {
+    margin-top: 14px;
+    font-size: 12px;
+    color: var(--muted);
+    opacity: .65;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  header.hero .updated::before {
+    content: "";
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  section, h3[id] { scroll-margin-top: 24px; }
+  section { margin-bottom: 48px; }
+  h2 {
+    font-size: 22px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 8px;
+    margin-top: 0;
+  }
+  h3 { font-size: 17px; color: var(--accent); margin-top: 28px; }
+  p, li { font-size: 15px; }
+  .subhead {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--text);
+    margin: 24px 0 8px;
+    padding-left: 10px;
+    border-left: 3px solid var(--accent);
+  }
+  code {
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: "SF Mono", "Fira Code", Consolas, monospace;
+    font-size: 13px;
+    color: var(--code-orange);
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    overflow-x: auto;
+    position: relative;
+  }
+  pre code { background: none; padding: 0; color: var(--text); font-size: 13px; }
+  .cmt { color: var(--cmt); }
+  .tok { color: var(--tok); }
+  main img { max-width: 100%; height: auto; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  th, td { border: 1px solid var(--border); padding: 10px 12px; text-align: left; }
+  th { background: var(--panel); }
+  .note, .warn {
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  .note { background: rgba(88,166,255,.1); border-left: 4px solid var(--accent); }
+  .warn { background: var(--warn-bg); border-left: 4px solid var(--warn-border); }
+  .step {
+    display: flex;
+    gap: 14px;
+    margin: 16px 0;
+    align-items: flex-start;
+  }
+  .step .num {
+    flex-shrink: 0;
+    width: 28px; height: 28px;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 600;
+    font-size: 14px;
+  }
+  .step .body { flex: 1; min-width: 0; }
+  /* 工作流示例：用户输入气泡 + 预期结果 */
+  .say {
+    background: var(--accent-soft);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 6px 6px 0;
+    padding: 8px 12px;
+    margin: 6px 0;
+    font-size: 14px;
+  }
+  .say::before {
+    content: "你输入";
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--bg);
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    padding: 0 5px;
+    margin-right: 8px;
+    vertical-align: 1px;
+  }
+  .exp {
+    color: var(--muted);
+    font-size: 14px;
+    margin: 6px 0 0;
+  }
+  .exp::before {
+    content: "↳ 预期：";
+    color: var(--accent2);
+    font-weight: 600;
+  }
+  .wf-card {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 4px 20px 16px;
+    margin: 18px 0;
+    background: var(--panel);
+  }
+  kbd {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-bottom-width: 2px;
+    border-radius: 5px;
+    padding: 1px 6px;
+    font-size: 12px;
+    font-family: monospace;
+  }
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    padding: 24px;
+    border-top: 1px solid var(--border);
+  }
+  a { color: var(--accent); }
+  /* 主题切换按钮 */
+  #theme-toggle {
+    position: fixed;
+    top: 16px; right: 16px;
+    z-index: 100;
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--text);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    transition: transform .15s ease, background .2s ease;
+  }
+  #theme-toggle:hover { transform: scale(1.08); }
+  @media (max-width: 768px) {
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 110;
+      background: rgba(13,17,23,.48);
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity .2s ease, visibility 0s linear .2s;
+    }
+    body.nav-open::before {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transition: opacity .2s ease, visibility 0s linear 0s;
+    }
+    body.nav-open { overflow: hidden; }
+    .layout { padding-left: 0; }
+    body.nav-collapsed nav,
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      z-index: 120;
+      width: min(78vw, 300px);
+      height: 100vh;
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      transform: translateX(-100%);
+      visibility: hidden;
+      pointer-events: none;
+      transition: transform .28s cubic-bezier(.4,0,.2,1),
+                  border-color .28s ease,
+                  visibility 0s linear .28s;
+    }
+    body.nav-open nav {
+      transform: translateX(0);
+      visibility: visible;
+      pointer-events: auto;
+      transition: transform .28s cubic-bezier(.4,0,.2,1),
+                  border-color .28s ease,
+                  visibility 0s linear 0s;
+    }
+    .nav-head,
+    .nav-inner { width: min(78vw, 300px); }
+    main { padding: 84px 20px 20px; }
+    body:not(.nav-collapsed) #nav-toggle-btn,
+    body.nav-collapsed #nav-toggle-btn {
+      --ntop: 16px;
+      --nleft: 16px;
+      display: flex;
+      border-radius: 50%;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      box-shadow: 0 2px 8px rgba(0,0,0,.25);
+      color: var(--text);
+    }
+    body:not(.nav-collapsed) #nav-toggle-btn:hover,
+    body.nav-collapsed #nav-toggle-btn:hover {
+      background: var(--panel);
+      color: var(--text);
+    }
+  }
+  @media print {
+    :root,
+    :root.light-theme,
+    :root.dark-theme {
+      --bg: #ffffff;
+      --panel: #f6f8fa;
+      --border: #d0d7de;
+      --text: #1f2328;
+      --muted: #59636e;
+      --accent: #0969da;
+      --accent2: #1a7f37;
+      --code-bg: #f6f8fa;
+      --warn-bg: #fff8c5;
+      --warn-border: #d4a72c;
+      --code-orange: #953800;
+      --hero-grad: linear-gradient(135deg, #eaf2ff 0%, #d8e6ff 100%);
+      --accent-soft: rgba(9,105,218,.10);
+      --cmt: #57606a;
+      --tok: #0550ae;
+      --del: #cf222e;
+    }
+    nav,
+    #theme-toggle,
+    #nav-toggle-btn { display: none !important; }
+    body::before { display: none !important; }
+    .layout {
+      display: block;
+      max-width: none;
+      margin: 0;
+      padding: 0;
+    }
+    main {
+      padding: 0;
+      width: 100%;
+    }
+    pre {
+      white-space: pre-wrap;
+      overflow: visible;
+    }
+    .step .num { background: none; color: #000; border: 1px solid #000; }
+  }
+</style>
+</head>
+<body>
+<button id="theme-toggle" aria-label="切换主题模式（自动/浅色/深色）" title="主题：跟随系统（点击切换）">🌓</button>
+<button id="nav-toggle-btn" aria-label="收起/展开目录" aria-expanded="true" aria-controls="site-nav" title="收起/展开目录">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="3" y="3" width="18" height="18" rx="2"/>
+    <line x1="9" y1="3" x2="9" y2="21"/>
+  </svg>
+</button>
+<div class="layout">
+  <nav id="site-nav">
+   <div class="nav-head">
+     <h2>目录</h2>
+     <span id="nav-btn-anchor" aria-hidden="true"></span>
+   </div>
+   <div class="nav-inner">
+    <a href="#start">一、启动工具</a>
+    <a href="#use">二、检查与最近查询</a>
+    <a href="#limits">三、检测边界</a>
+    <a href="#config">四、服务配置</a>
+    <a href="#verify">五、验证与后续部署</a>
+   </div>
+  </nav>
+
+  <main>
+    <header class="hero">
+      <h1>链接跳转检查工具 · 本地使用说明</h1>
+      <p>前端、检测服务与浏览器最近查询</p>
+      <p class="updated">最后更新：<time id="last-updated" datetime="2026-11-02T10:33:23Z">2026-11-02</time></p>
+    </header>
+    <section id="start">
+      <h2>一、启动工具</h2>
+      <p>需要 Node.js 22 或更高版本。首次在新设备使用时安装依赖和独立 Chromium：</p>
+      <pre><code>cd "$HOME/Desktop/MyRepository/AxaaHub.github.io/dev/link/server"
+npm ci
+npm run install:browser</code></pre>
+      <p>启动：</p>
+      <pre><code>cd "$HOME/Desktop/MyRepository/AxaaHub.github.io/dev/link/server"
+npm start</code></pre>
+      <p>保持终端运行，在浏览器打开 <a href="http://127.0.0.1:8787/">http://127.0.0.1:8787/</a>。按 <kbd>Ctrl</kbd> + <kbd>C</kbd> 停止服务。服务默认只监听本机回环地址，同时提供页面和 API，无需另开静态文件服务器。</p>
+      <div class="note">请通过 HTTP 页面使用工具。单独双击 index.html 并不能启动检测服务，file:// 下的模块加载与本地存储也不能代替正常网站运行环境。</div>
+      <p><a href="./index.html">工具首页</a> · <a href="./design.html">界面设计文档</a></p>
+    </section>
+    <section id="use">
+      <h2>二、检查与最近查询</h2>
+      <ol>
+        <li>输入包含 http:// 或 https:// 的完整网址，选择检测方式和访问设备。</li>
+        <li>点击“开始检查”，实时查看已观察到的地址；运行中可“停止检查”。</li>
+        <li>查看实际终点与结束原因。参数中声明的 ReturnUrl 等目标会单列，并标记是否实际收到过响应。</li>
+        <li>逐条复制完整地址，或导出 JSON / 文本。网址参数及编码会保留。</li>
+      </ol>
+      <h3>最近查询</h3>
+      <p>默认保存最近 20 条摘要到当前浏览器的 localStorage。相同完整网址、模式与设备组合更新到最前。点击条目只回填，点击“重查”才联网。关闭“记录查询”后停止新增，已有记录仍可删除；清空全部需要确认。</p>
+      <p>历史键为 <code>axaahub.link.recent.v1</code>。仅保存查询配置、时间、结束状态、地址数量与最终地址，完整链路请使用导出。清空操作只影响本工具历史，主题偏好及其他工具的数据保留。</p>
+      <p>记录不额外上传或跨设备同步；执行检查的网址仍会发送给所连接的后端。不同端口和域名具有独立记录。浏览器拒绝存储或记录损坏时会提示，但仍可检查链接。</p>
+      <h3>生成二维码</h3>
+      <p>点击页面顶部“生成二维码”，在弹窗输入网址、中文或多行文本，然后点击“生成二维码”预览；可下载高清 PNG。内容修改后旧图会收起，需要重新生成。</p>
+      <p>二维码在当前浏览器本地生成，不调用外部二维码接口，也不写入最近查询。输入内容按原样编码，保留空格、换行与网址参数；超过二维码容量时会提示缩短。</p>
+    </section>
+    <section id="limits">
+      <h2>三、检测边界</h2>
+      <table>
+        <tr><th>模式</th><th>行为</th><th>结束含义</th></tr>
+        <tr><td>快速检查</td><td>GET 逐跳检查 HTTP 重定向，解析相对 Location，保留本次会话 Cookie。</td><td>HTTP 链路结束不等于页面不会执行脚本继续跳转。</td></tr>
+        <tr><td>浏览器检查</td><td>在独立未登录 Chromium 中观察主页面导航，包括 HTTP、脚本与刷新跳转。子资源不计为跳转步骤。</td><td>最多观察 30 秒；正常结果也只覆盖该窗口，不能保证更晚没有跳转。</td></tr>
+      </table>
+      <p>两种模式最多记录 20 个地址。遇登录、验证码、站点频控或访问限制、循环、下载、新窗口、交互提示、非 HTTP 协议、失败或用户停止时保留已有记录。登录与验证码识别使用网址和页面特征，可能有漏判或误判。</p>
+      <p>仅连接标准端口 80 / 443；拒绝带用户名、密码的网址。浏览器模式只允许 GET / HEAD 网络请求，阻止其他方法；不执行登录、提交表单或点击操作。页面依赖其他请求方法时可能无法完成跳转。</p>
+      <h3>网络隔离与资源限制</h3>
+      <p>每次 DNS 解析拒绝任何包含私网、回环、链路本地、保留地址的答案。快速模式连接到已验证 IP；浏览器的 HTTP 连接与 HTTPS CONNECT 隧道均通过本机受控代理重新验证并固定目标 IP，覆盖重定向和子资源。Chromium 启用沙箱、阻止 Service Worker，并禁用 QUIC 与非代理 WebRTC UDP。</p>
+      <p>默认全局并发 2、每个来源 IP 每分钟最多 6 次且同时只运行 1 次；每次浏览器检查最多 250 个初始资源请求。HTTP 响应、隧道传输与单次时长另有限制。这里的检查保护不能代替将来公开服务器的系统进程、内存与网络隔离。</p>
+    </section>
+    <section id="config">
+      <h2>四、服务配置</h2>
+      <table>
+        <tr><th>环境变量</th><th>默认值</th><th>用途</th></tr>
+        <tr><td>HOST</td><td>127.0.0.1</td><td>监听地址。本轮保持仅本机使用。</td></tr>
+        <tr><td>PORT</td><td>8787</td><td>页面和 API 端口。</td></tr>
+        <tr><td>MAX_CONCURRENT</td><td>2</td><td>全局检测并发，允许 1–8。</td></tr>
+        <tr><td>RATE_LIMIT</td><td>6</td><td>每 IP 每分钟查询次数，允许 1–120。</td></tr>
+        <tr><td>ALLOWED_ORIGINS</td><td>空</td><td>额外允许的前端来源，逗号分隔完整 origin；同源始终允许。</td></tr>
+        <tr><td>ALLOWED_HOSTS</td><td>localhost,127.0.0.1,[::1]</td><td>允许访问服务的 Host 主机名，防止任意域名重新绑定到本机。</td></tr>
+        <tr><td>DNS_SERVERS</td><td>1.1.1.1,8.8.8.8</td><td>用于查询实际 A / AAAA 记录的 DNS 服务器 IP，逗号分隔；避免系统 Fake-IP 地址进入检测连接。</td></tr>
+        <tr><td>API_TOKEN</td><td>空</td><td>可选 Bearer 访问口令；仅写后端环境，不能提交到仓库。</td></tr>
+      </table>
+      <p>DNS 查询默认发送给上述公共解析器；可通过 DNS_SERVERS 改为自己信任的解析器。无论解析来源如何，所有返回地址仍须通过公网地址检查，连接时固定已验证 IP，不允许把 Fake-IP 测试网段加入放行列表。</p>
+      <p>公开配置 <code>config.js</code> 的 <code>apiBase</code> 用于指定后端根地址；留空时本地页面自动使用同源地址。也可在工具“连接设置”中填写。服务地址保存在浏览器；访问口令只保留在当前页面内存中。</p>
+      <p>接口：<code>POST /api/trace</code>，JSON 请求：</p>
+      <pre><code>{"url":"https://example.com/","mode":"browser","profile":"desktop"}</code></pre>
+      <p>响应为 NDJSON 流，依次发送 started、progress、result。取消客户端请求会终止后端会话；最终结果包含 hops、final、declaredTargets、termination、durationMs、isPartial。健康检查为 <code>GET /api/health</code>。</p>
+      <div class="note">限流基于实际 TCP 来源地址，故意不信任客户端提供的 X-Forwarded-For。将来接反向代理时，该地址可能变成代理 IP；需在部署方案中设置可信入口和边缘限流，不能直接信任任意转发头。CORS 允许列表不等于接口认证。</div>
+    </section>
+    <section id="verify">
+      <h2>五、验证与后续部署</h2>
+      <p>自动检查：</p>
+      <pre><code>cd "$HOME/Desktop/MyRepository/AxaaHub.github.io/dev/link/server"
+npm test</code></pre>
+      <p>测试使用可控 HTTP 页面和受限的测试传输，不访问第三方站点。覆盖 HTTP / Cookie / 相对跳转、脚本与刷新导航、真实终点与参数目标分离、内网及 DNS 重绑定拦截、取消、循环、最近查询和接口限流。测试专用 <code>test/preview.mjs</code> 使用 8788 端口与隔离数据，仅供开发验收，生产入口不会导入它。</p>
+      <p>本轮交付为本地可运行版本。后端部署位置待定，尚未发布到 GitHub Pages，也未创建公网 API。后续部署前端到 <code>/dev/link/</code>，后端单独运行并提供 HTTPS，再配置来源、Host 白名单、系统资源限制和可信入口限流。</p>
+      <p>参考：<a href="https://playwright.dev/docs/network" target="_blank" rel="noopener noreferrer">Playwright 网络代理</a>、<a href="https://playwright.dev/docs/api/class-browsertype" target="_blank" rel="noopener noreferrer">Chromium 启动与沙箱</a>、<a href="https://chromedevtools.github.io/devtools-protocol/tot/Page/" target="_blank" rel="noopener noreferrer">CDP 导航事件</a>、<a href="https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage" target="_blank" rel="noopener noreferrer">浏览器本地存储</a>。</p>
+    </section>
+    <footer>链接跳转检查工具 · AxaaHub<br>本地使用说明 · 2026-11-02</footer>
+  </main>
+</div>
+
+<script>
+function storeGet(k) {
+  try { return localStorage.getItem(k); } catch (e) { return null; }
+}
+function storeSet(k, v) {
+  try { localStorage.setItem(k, v); } catch (e) {}
+}
+function storeRemove(k) {
+  try { localStorage.removeItem(k); } catch (e) {}
+}
+
+(function () {
+  var root = document.documentElement;        // <html>
+  var btn = document.getElementById('theme-toggle');
+  var KEY = 'aidoc-theme';
+  var media = window.matchMedia ? window.matchMedia('(prefers-color-scheme: light)') : null;
+
+  // 应用主题：'dark' / 'light' / null(跟随系统)
+  function apply(mode) {
+    root.classList.remove('dark-theme', 'light-theme');
+    if (mode === 'dark')  root.classList.add('dark-theme');
+    if (mode === 'light') root.classList.add('light-theme');
+    if (mode === 'light') {
+      btn.textContent = '☀️';
+      btn.title = '主题：浅色（点击切换）';
+    } else if (mode === 'dark') {
+      btn.textContent = '🌙';
+      btn.title = '主题：深色（点击切换）';
+    } else {
+      btn.textContent = '🌓';
+      btn.title = '主题：跟随系统（点击切换）';
+    }
+  }
+
+  // 初始化：优先读取用户手动选择，否则跟随系统
+  apply(storeGet(KEY));
+
+  // 点击按 自动 -> 浅色 -> 深色 -> 自动 三态循环
+  btn.addEventListener('click', function () {
+    var order = [null, 'light', 'dark'];
+    var next = order[(order.indexOf(storeGet(KEY)) + 1) % order.length];
+    apply(next);
+    if (next) storeSet(KEY, next);
+    else storeRemove(KEY);
+  });
+
+  // 未手动选择时，跟随系统实时变化
+  function onSystemThemeChange() {
+    if (!storeGet(KEY)) apply(null);
+  }
+  if (media) {
+    if (media.addEventListener) media.addEventListener('change', onSystemThemeChange);
+    else if (media.addListener) media.addListener(onSystemThemeChange);
+  }
+})();
+
+// ---- 平滑滚动：等加载与滚动位置恢复完成后再启用 ----
+(function () {
+  function enable() {
+    // 再等一帧，确保浏览器的滚动位置恢复已完成，避免被动画化
+    requestAnimationFrame(function () {
+      document.documentElement.classList.add('smooth-scroll');
+    });
+  }
+  if (document.readyState === 'complete') enable();
+  else window.addEventListener('load', enable);
+})();
+
+// ---- 最后更新日期：按系统时区与地区格式显示 ----
+(function () {
+  var el = document.getElementById('last-updated');
+  if (!el) return;
+  var d = new Date(el.getAttribute('datetime'));
+  if (isNaN(d)) return;
+  // 数字短格式 YYYY-MM-DD，按系统本地时区取年月日
+  var p = function (n) { return String(n).padStart(2, '0'); };
+  el.textContent = d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+  el.title = d.toLocaleString();   // 悬停显示完整本地日期时间
+})();
+
+// ---- 目录收起 / 展开（单按钮在两个位置间平移变形）----
+(function () {
+  var KEY = 'aidoc-nav';
+  var btn = document.getElementById('nav-toggle-btn');
+  var nav = document.getElementById('site-nav');
+  var anchor = document.getElementById('nav-btn-anchor');
+  var rootEl = document.documentElement;
+  var layoutEl = document.querySelector('.layout');
+  var mobileMedia = window.matchMedia ? window.matchMedia('(max-width: 768px)') : null;
+  var wasMobile = isMobile();
+
+  function isMobile() {
+    return mobileMedia ? mobileMedia.matches : window.innerWidth <= 768;
+  }
+
+  function syncNavX() {
+    if (isMobile() || !layoutEl) return;
+    rootEl.style.setProperty('--nav-left', layoutEl.getBoundingClientRect().left + 'px');
+  }
+
+  function setExpanded(open) {
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+
+  function syncExpanded() {
+    setExpanded(isMobile() ? document.body.classList.contains('nav-open') : !document.body.classList.contains('nav-collapsed'));
+  }
+
+  function setDrawerOpen(open) {
+    document.body.classList.toggle('nav-open', open);
+    syncExpanded();
+  }
+
+  function syncNavScrollable() {
+    var inner = document.querySelector('.nav-inner');
+    if (inner) inner.classList.toggle('can-scroll', inner.scrollHeight > inner.clientHeight);
+  }
+
+  // 把“展开态”按钮该停靠的坐标（= 目录内锚点中心）写入 CSS 变量，
+  // 这样无论窗口多宽、布局如何居中，按钮都能精确贴合目录里的位置。
+  function syncAnchor() {
+    if (isMobile()) return;
+    var r = anchor.getBoundingClientRect();
+    // 锚点未渲染时（如移动端 nav: display:none，rect 全为 0）不更新，
+    // 否则会写入 -21px 等错误坐标，放大回桌面端时按钮就会“飞”过去。
+    if (r.width === 0 && r.height === 0) return;
+    rootEl.style.setProperty('--nleft', (r.left + r.width / 2 - 21) + 'px');
+    rootEl.style.setProperty('--ntop',  (r.top + r.height / 2 - 21) + 'px');
+  }
+
+  // 跟随式更新（缩放 / 滚动）：期间关闭按钮过渡，让它即时贴住锚点而不是“飞”；
+  // 停止一小段时间后再恢复过渡，保证收起/展开“点击”时仍有平移变形动画。
+  var animTimer;
+  function syncFollow() {
+    btn.style.transition = 'none';
+    syncAnchor();
+    clearTimeout(animTimer);
+    animTimer = setTimeout(function () { btn.style.transition = ''; }, 200);
+  }
+
+  function setCollapsed(c) {
+    document.body.classList.toggle('nav-collapsed', c);
+    storeSet(KEY, c ? '1' : '0');
+    syncExpanded();
+  }
+  // 恢复上次状态
+  if (storeGet(KEY) === '1') document.body.classList.add('nav-collapsed');
+  syncExpanded();
+  syncNavScrollable();
+
+  // 首次定位时临时禁用过渡，避免刷新瞬间从默认位置“滑”一下
+  btn.style.transition = 'none';
+  syncNavX();
+  syncAnchor();
+  void btn.offsetWidth;          // 强制回流，让定位立即落定
+  requestAnimationFrame(function () { btn.style.transition = ''; });
+
+  window.addEventListener('resize', function () {
+    var nowMobile = isMobile();
+    if (nowMobile !== wasMobile) {
+      document.body.classList.remove('nav-open');
+      wasMobile = nowMobile;
+    }
+    syncExpanded();
+    syncNavScrollable();
+    syncNavX();
+    syncFollow();
+  });
+  window.addEventListener('scroll', syncFollow, { passive: true });
+
+  btn.addEventListener('click', function () {
+    // 确保点击切换一定带动画（即便此刻正处于缩放的“无过渡”窗口内）
+    clearTimeout(animTimer);
+    btn.style.transition = '';
+    if (isMobile()) {
+      setDrawerOpen(!document.body.classList.contains('nav-open'));
+      return;
+    }
+    setCollapsed(!document.body.classList.contains('nav-collapsed'));
+  });
+
+  nav.addEventListener('click', function (e) {
+    var t = e.target;
+    while (t && t !== nav) {
+      if (t.tagName === 'A') {
+        if (isMobile()) setDrawerOpen(false);
+        return;
+      }
+      t = t.parentNode;
+    }
+  });
+
+  document.addEventListener('click', function (e) {
+    if (!isMobile() || !document.body.classList.contains('nav-open')) return;
+    if (nav.contains(e.target) || btn.contains(e.target)) return;
+    setDrawerOpen(false);
+  });
+})();
+
+// ---- 滚动高亮目录（scroll-spy）----
+(function () {
+  var links = Array.prototype.slice.call(document.querySelectorAll('nav a[href^="#"]'));
+  var navBox = document.querySelector('.nav-inner');
+  // 建立 id -> 链接 映射，收集监听目标，并记录每个子项所属的主目录链接
+  var map = {};
+  var targets = [];
+  var parentOf = {};      // 子链接 -> 其上方最近的主目录链接
+  var lastMain = null;
+  links.forEach(function (a) {
+    var id = decodeURIComponent(a.getAttribute('href').slice(1));
+    var el = document.getElementById(id);
+    if (el) { map[id] = a; targets.push(el); }
+    if (a.classList.contains('sub')) {
+      if (lastMain) parentOf[id] = lastMain;
+    } else {
+      lastMain = a;        // 记住当前主目录，后续子项归属于它
+    }
+  });
+  if (!targets.length) return;
+
+  var current = null;   // 当前命中的 id，避免重复刷新 DOM
+  function glide(el, top) {
+    if (el.scrollTo && 'scrollBehavior' in document.documentElement.style) el.scrollTo({ top: top, behavior: 'smooth' });
+    else el.scrollTop = top;
+  }
+
+  function highlight() {
+    // 触发线设在视口约 28% 高度处；命中“已越过触发线的最后一个标题”
+    var line = window.innerHeight * 0.28;
+    var best = targets[0].id;
+    var atBottom = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2;
+    var atTop = window.scrollY <= 2;
+    if (atBottom) {
+      best = targets[targets.length - 1].id;
+    } else {
+      for (var i = 0; i < targets.length; i++) {
+        if (targets[i].getBoundingClientRect().top <= line) {
+          best = targets[i].id;   // 文档顺序靠后者覆盖，得到最近越过的标题
+        } else {
+          break;                  // 后面的还没滚到，无需再看
+        }
+      }
+    }
+    // 正文回到最顶部：目录也平滑回到自身顶部（底部方向保持不跟随）
+    if (atTop && navBox && navBox.scrollTop > 0) glide(navBox, 0);
+    if (best === current) return;
+    current = best;
+
+    links.forEach(function (a) { a.classList.remove('active', 'active-sub'); });
+    var link = map[best];
+    if (!link) return;
+    if (link.classList.contains('sub')) {
+      // 当前在子小节：子项用淡标识，父级主目录用醒目标识
+      link.classList.add('active-sub');
+      if (parentOf[best]) parentOf[best].classList.add('active');
+    } else {
+      // 当前在主章节标题处
+      link.classList.add('active');
+    }
+    // 目录较长时，让高亮项在目录内纵向可见。
+    // 只调整 .nav-inner 的纵向 scrollTop，不用 scrollIntoView——
+    // 后者会顺带横向滚动“收起态”的目录（width:0; overflow:hidden），
+    // 留下残留的 scrollLeft，导致展开时内容横向偏移。
+    // 使用 smooth 滚动最小距离，避免矮窗口下目录高亮瞬间跳变。
+    // 页面到达两端时只更新高亮，不再把目录滚向其两端；高亮项此时可能被裁掉一角，属有意取舍。
+    var box = navBox;
+    if (box && !atTop && !atBottom) {
+      var lr = link.getBoundingClientRect();
+      var br = box.getBoundingClientRect();
+      var target = null;
+      if (lr.top < br.top) target = box.scrollTop - (br.top - lr.top) - 8;
+      else if (lr.bottom > br.bottom) target = box.scrollTop + (lr.bottom - br.bottom) + 8;
+      if (target !== null) {
+        glide(box, target);
+      }
+    }
+  }
+
+  // 用 rAF 节流滚动事件
+  var ticking = false;
+  function onScroll() {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(function () { highlight(); ticking = false; });
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll);
+  highlight();   // 初始执行一次
+})();
+</script>
+</body>
+</html>

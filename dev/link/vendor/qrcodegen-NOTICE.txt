@@ -1,0 +1,5 @@
+QR Code generator library, Project Nayuki, v1.8.0 (MIT).
+Source: https://github.com/nayuki/QR-Code-generator/releases/download/v1.8.0/qrcodegen-v1.8.0-es6.js
+Upstream SHA-256: 6a1116192ed1dd67fa1bf31e77f5817103d71c23bbac24c382e698b7668bdd01
+The original copyright and MIT license are retained in qrcodegen.mjs.
+Integration changes: remove trailing whitespace and append ES module exports.
